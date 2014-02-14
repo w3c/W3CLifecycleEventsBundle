@@ -38,3 +38,28 @@ public function registerBundles()
 ```
 That's it!
 
+Usage
+-----
+
+You can use the bundle through the service W3C\LifecycleEventsBundle\Services\LifecycleEventsDispatcher.
+Here is how you get it from a controller, and how you would fire all the events it has recorded:
+```
+$dispatcher = $this->container->get("w3c_lifecycle_events.dispatcher");
+$dispatcher->dispatchEvents();
+```
+
+The sevice can dispatch three different events:
+- w3c.lifecycle.created as an instance of W3C\LifecycleEventsBundle\Event\LifecycleEvent
+- w3c.lifecycle.deleted as an instance of W3C\LifecycleEventsBundle\Event\LifecycleEvent
+- w3c.lifecycle.updated as an instance of W3C\LifecycleEventsBundle\Event\LifecycleUpdateEvent, which extends LifecycleEvent
+
+When a LifecycleEvent is fired, you can retrieve its associated entity (that has been created or deleted).
+When a LifecycleUpdateEvent is fired, you can retrieve its associated entity (that has been updated) and also query the list of changes this object has undergone. The methods are similar to [Doctrine\ORM\Event\PreUpdateEventArgs](http://www.doctrine-project.org/api/orm/2.3/class-Doctrine.ORM.Event.PreUpdateEventArgs.html "Doctrine API for PreUpdateEventsArgs")
+
+If you need to add, remove of modify some of the events that are going to be fired, you can use the following methods:
+```
+$creations = $dispatcher->getCreations();
+$deletions = $dispatcher->getDeletions();
+$updates = $dispatcher->getUpdates();
+```
+These return ArrayLists of events. You can add, remove or modify elements as you like.
