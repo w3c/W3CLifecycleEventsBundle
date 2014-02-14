@@ -63,3 +63,5 @@ $deletions = $dispatcher->getDeletions();
 $updates = $dispatcher->getUpdates();
 ```
 These return ArrayLists of events. You can add, remove or modify elements as you like.
+
+To use the events that are fired, you will need a listener. Such listeners can be found on the [demo bundle](https://github.com/w3c/lifecycle-events-demo-bundle)
