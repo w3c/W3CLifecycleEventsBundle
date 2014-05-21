@@ -2,8 +2,8 @@
     "name": "w3c/lifecycle-events-bundle",
     "type": "symfony-bundle",
     "description": "Symfony entity lifecycle events manager bundle",
-    "keywords": ["Lifecycle", "events"],
-    "homepage": "http://www.w3.org",
+    "keywords": ["lifecycle", "events", "domain"],
+    "homepage": "https://gitlab.w3.org/symfony-bundles/w3clifecycleeventsbundle",
     "license": "W3C",
     "authors": [
         {
