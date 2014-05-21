@@ -8,53 +8,76 @@
  */
 namespace W3C\LifecycleEventsBundle\EventListener;
 
-use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\ORM\Event\LifecycleEventArgs;
+use Doctrine\ORM\Event\PostFlushEventArgs;
 use Doctrine\ORM\Event\PreUpdateEventArgs;
-
 use W3C\LifecycleEventsBundle\Services\LifecycleEventsDispatcher;
 
 /**
  * Listen to Doctrine postPersist, postRemove and preUpdate to feed a LifecycleEventsDispatcher
  */
-class LifecycleEventsListener {
+class LifecycleEventsListener
+{
+    /**
+     * Events dispatcher
+     *
+     * @var LifecycleEventsDispatcher
+     */
     private $dispatcher;
 
     /**
      * Constructs a new instance
      *
-     * @param W3C\LifecycleEventsBundle\Services\LifecycleEventsDispatcher $dispatcher the dispatcher to fed
+     * @param LifecycleEventsDispatcher $dispatcher the dispatcher to fed
      */
-    public function __construct(LifecycleEventsDispatcher $dispatcher) {
+    public function __construct(LifecycleEventsDispatcher $dispatcher)
+    {
         $this->dispatcher = $dispatcher;
     }
 
     /**
      * Called upon receiving postPersist events
      *
-     * @param Doctrine\ORM\Event\LifecycleEventArgs $e event to feed the dispatcher with
+     * @param LifecycleEventArgs $args event to feed the dispatcher with
      */
-    public function postPersist(LifecycleEventArgs $e) {
-        $this->dispatcher->getCreations()->add($e);
+    public function postPersist(LifecycleEventArgs $args)
+    {
+        $this->dispatcher->getCreations()->add($args);
     }
 
     /**
      * Called upon receiving postRemove events
      *
-     * @param Doctrine\ORM\Event\LifecycleEventArgs $e event to feed the dispatcher with
+     * @param LifecycleEventArgs $args event to feed the dispatcher with
      */
-    public function postRemove(LifecycleEventArgs $e) {
-        $this->dispatcher->getDeletions()->add($e);
+    public function postRemove(LifecycleEventArgs $args)
+    {
+        $this->dispatcher->getDeletions()->add($args);
     }
 
     /**
      * Called upon receiving preUpdate events
      *
-     * @param Doctrine\ORM\Event\LifecycleEventArgs $e event to feed the dispatcher with
+     * @param PreUpdateEventArgs $args event to feed the dispatcher with
      */
-    public function preUpdate(PreUpdateEventArgs $e) {
-        $this->dispatcher->getUpdates()->add($e);
+    public function preUpdate(PreUpdateEventArgs $args)
+    {
+        $this->dispatcher->getUpdates()->add($args);
     }
+
+    /**
+     * Called upon receiving postFlush events
+     * Dispatches all gathered events
+     *
+     * @param PostFlushEventArgs $args post flush event
+     */
+    public function postFlush(PostFlushEventArgs $args)
+    {
+        if ($this->dispatcher->getAutoDispatch()) {
+            $this->dispatcher->dispatchEvents();
+        }
+    }
+
 }
 
 ?>

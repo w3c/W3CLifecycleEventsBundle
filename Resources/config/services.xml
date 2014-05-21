@@ -8,17 +8,20 @@
     <parameters>
         <parameter key="w3c_lifecycle_events.listener.class">W3C\LifecycleEventsBundle\EventListener\LifecycleEventsListener</parameter>
         <parameter key="w3c_lifecycle_events.dispatcher.class">W3C\LifecycleEventsBundle\Services\LifecycleEventsDispatcher</parameter>
+        <parameter key="w3c_lifecycle_events.auto_dispatch"/>
     </parameters>
     
     <services>
         <service id="w3c_lifecycle_events.dispatcher" class="%w3c_lifecycle_events.dispatcher.class%">
             <argument type="service" id="event_dispatcher"/>
+            <argument>%w3c_lifecycle_events.auto_dispatch%</argument>
         </service>
         <service id="w3c_lifecycle_events.listener" class="%w3c_lifecycle_events.listener.class%">
             <argument type="service" id="w3c_lifecycle_events.dispatcher"/>
             <tag name="doctrine.event_listener" event="postPersist" />
             <tag name="doctrine.event_listener" event="postRemove" />
             <tag name="doctrine.event_listener" event="preUpdate" />
+            <tag name="doctrine.event_listener" event="postFlush"/>
         </service>
     </services>
 
