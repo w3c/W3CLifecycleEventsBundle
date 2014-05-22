@@ -14,7 +14,7 @@ use Doctrine\ORM\Event\PreUpdateEventArgs;
 use Symfony\Component\EventDispatcher\ContainerAwareEventDispatcher;
 use W3C\LifecycleEventsBundle\Event\LifecycleEvent;
 use W3C\LifecycleEventsBundle\Event\LifecycleUpdateEvent;
-use W3C\LifecycleEventsBundle\Event\PreDispatchEvent;
+use W3C\LifecycleEventsBundle\Event\PreAutoDispatchEvent;
 
 /**
  * LifecycleEventsDispatcher is meant to dispatch entity creation, deletion and updates
@@ -193,10 +193,10 @@ class LifecycleEventsDispatcher
     }
 
     /**
-     * Send out a preDispatch event
+     * Send out a preAutoDispatch event
      */
-    public function preDispatch()
+    public function preAutoDispatch()
     {
-        $this->dispatcher->dispatch('w3c.lifecycle.preDispatch', new PreDispatchEvent($this));
+        $this->dispatcher->dispatch('w3c.lifecycle.preAutoDispatch', new PreAutoDispatchEvent($this));
     }
 }

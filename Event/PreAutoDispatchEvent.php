@@ -14,7 +14,7 @@ use W3C\LifecycleEventsBundle\Services\LifecycleEventsDispatcher;
 /**
  * LifecycleEvent is used when an entity is created or deleted
  */
-class PreDispatchEvent extends Event
+class PreAutoDispatchEvent extends Event
 {
 
     /**
