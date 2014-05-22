@@ -166,12 +166,21 @@ class LifecycleEventsDispatcher
         return $this->updates;
     }
 
+    /**
+     * Is automatic dispatching of events active.
+     * This value has no direct effect on this class but can be use elsewhere
+     * (e.g. in LifecycleEventListener::postFlush())
+     *
+     * @return bool
+     */
     public function getAutoDispatch()
     {
         return $this->autoDispatch;
     }
 
     /**
+     * Set automatic dispatching of events
+     *
      * @param $autoDispatch
      * @return $this
      */
