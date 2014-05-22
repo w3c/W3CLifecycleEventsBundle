@@ -53,7 +53,10 @@ When a LifecycleUpdateEvent is fired, you can retrieve its associated entity (th
 
 To use the events that are fired, you will need a listener. Such listeners can be found on the [demo bundle](https://github.com/w3c/lifecycle-events-demo-bundle)
 
-There are two ways to disable the automatic flush:
+Disabling automatic dispatching of events
+-----------------------------------------
+
+There are two ways to disable the automatic dispatch:
 - globally in config.yml
 ```
 w3_c_lifecycle_events:
@@ -65,11 +68,30 @@ $dispatcher = $this->container->get("w3c_lifecycle_events.dispatcher");
 $dispatcher->setAutoDispatch(false);
 $dispatcher->dispatchEvents(); // manually dispatch all events
 ```
+Manipulating events before they are sent
+----------------------------------------
 
-If you need to add, remove of modify some of the events that are going to be fired, you have to disable automatic dispatch first and then use the following methods:
+There are two ways to add, remove of modify some of the events that are going to be fired.
+
+### On-demand
+
+You have to disable automatic dispatch first and then use the following methods:
 ```
 $creations = $dispatcher->getCreations();
 $deletions = $dispatcher->getDeletions();
 $updates = $dispatcher->getUpdates();
 ```
 These return ArrayLists of events. You can add, remove or modify elements as you like.
+
+When done, you can dispatch all the events by calling
+ ```
+ $dispatcher->dispatchEvents()
+ ```
+
+### Automatically
+
+If you need to always make the same changes to the events, you can register a new event listener listening to
+```w3c.lifecycle.preAutoDispatch```. This event is fired right before dispatching all the events and only when
+```auto_dispatch``` is set to true.
+This event has one method getDispatcher() that returns the same dispatcher as in the previous section, thus allowing
+to retrieve creation deletion and update events, and manipulate them.
