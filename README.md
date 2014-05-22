@@ -1,7 +1,7 @@
 lifecycle-events-bundle
 =======================
 
-This Symfony bundle is meant to capture and dispatch events that happen throughout the lifecycle of entities
+This Symfony bundle is meant to capture and dispatch events that happen throughout the lifecycle of entities:
 - creation
 - deletion
 - updates
@@ -41,12 +41,7 @@ That's it!
 Usage
 -----
 
-You can use the bundle through the service W3C\LifecycleEventsBundle\Services\LifecycleEventsDispatcher.
-Here is how you get it from a controller, and how you would fire all the events it has recorded:
-```
-$dispatcher = $this->container->get("w3c_lifecycle_events.dispatcher");
-$dispatcher->dispatchEvents();
-```
+For basic use, everything is automated: after a successful flush, all the events get fired at once.
 
 The sevice can dispatch three different events:
 - w3c.lifecycle.created as an instance of W3C\LifecycleEventsBundle\Event\LifecycleEvent
@@ -56,12 +51,25 @@ The sevice can dispatch three different events:
 When a LifecycleEvent is fired, you can retrieve its associated entity (that has been created or deleted).
 When a LifecycleUpdateEvent is fired, you can retrieve its associated entity (that has been updated) and also query the list of changes this object has undergone. The methods are similar to [Doctrine\ORM\Event\PreUpdateEventArgs](http://www.doctrine-project.org/api/orm/2.3/class-Doctrine.ORM.Event.PreUpdateEventArgs.html "Doctrine API for PreUpdateEventsArgs")
 
-If you need to add, remove of modify some of the events that are going to be fired, you can use the following methods:
+To use the events that are fired, you will need a listener. Such listeners can be found on the [demo bundle](https://github.com/w3c/lifecycle-events-demo-bundle)
+
+There are two ways to disable the automatic flush:
+- globally in config.yml
+```
+w3_c_lifecycle_events:
+    auto_dispatch:        false
+```
+- temporarily in a container:
+```
+$dispatcher = $this->container->get("w3c_lifecycle_events.dispatcher");
+$dispatcher->setAutoDispatch(false);
+$dispatcher->dispatchEvents(); // manually dispatch all events
+```
+
+If you need to add, remove of modify some of the events that are going to be fired, you have to disable automatic dispatch first and then use the following methods:
 ```
 $creations = $dispatcher->getCreations();
 $deletions = $dispatcher->getDeletions();
 $updates = $dispatcher->getUpdates();
 ```
 These return ArrayLists of events. You can add, remove or modify elements as you like.
-
-To use the events that are fired, you will need a listener. Such listeners can be found on the [demo bundle](https://github.com/w3c/lifecycle-events-demo-bundle)
