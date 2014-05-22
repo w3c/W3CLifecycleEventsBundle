@@ -58,7 +58,7 @@ Disabling automatic dispatching of events
 
 There are two ways to disable the automatic dispatch:
 - globally in config.yml
-```
+``` yaml
 w3_c_lifecycle_events:
     auto_dispatch:        false
 ```
@@ -68,6 +68,7 @@ $dispatcher = $this->container->get("w3c_lifecycle_events.dispatcher");
 $dispatcher->setAutoDispatch(false);
 $dispatcher->dispatchEvents(); // manually dispatch all events
 ```
+
 Manipulating events before they are sent
 ----------------------------------------
 
