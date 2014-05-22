@@ -58,7 +58,7 @@ Disabling automatic dispatching of events
 
 There are two ways to disable the automatic dispatch:
 - globally in config.yml
-``` yaml
+``` 
 w3_c_lifecycle_events:
     auto_dispatch:        false
 ```
