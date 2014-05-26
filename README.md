@@ -68,6 +68,7 @@ $dispatcher = $this->container->get("w3c_lifecycle_events.dispatcher");
 $dispatcher->setAutoDispatch(false);
 $dispatcher->dispatchEvents(); // manually dispatch all events
 ```
+
 Manipulating events before they are sent
 ----------------------------------------
 
