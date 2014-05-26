@@ -18,7 +18,9 @@
         "symfony/yaml": "~2.1"
     },
     "autoload": {
-        "psr-0": { "W3C\\LifecycleEventsBundle": "" }
+        "psr-0": {
+            "W3C\\LifecycleEventsBundle": ""
+        }
     },
     "target-dir": "W3C/LifecycleEventsBundle"
 }

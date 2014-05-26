@@ -22,7 +22,7 @@ class W3CLifecycleEventsExtension extends Extension
         $configuration = new Configuration();
         $config = $this->processConfiguration($configuration, $configs);
 
-        $loader = new Loader\XmlFileLoader($container, new FileLocator(__DIR__.'/../Resources/config'));
+        $loader = new Loader\XmlFileLoader($container, new FileLocator(__DIR__ . '/../Resources/config'));
         $loader->load('services.xml');
 
         $container->setParameter('w3c_lifecycle_events.auto_dispatch', $config['auto_dispatch']);
