@@ -11,7 +11,8 @@ namespace W3C\LifecycleEventsBundle\Event;
 /**
  * LifecycleUpdateEvent is used when an entity is created or deleted
  */
-class LifecycleUpdateEvent extends LifecycleEvent {
+class LifecycleUpdateEvent extends LifecycleEvent
+{
     /**
      * @var array
      */
@@ -20,14 +21,14 @@ class LifecycleUpdateEvent extends LifecycleEvent {
     /**
      * Constructor.
      *
-     * @param object        $entity
-     * @param array         $changeSet
+     * @param object $entity
+     * @param array $changeSet
      */
     public function __construct($entity, array $changeSet)
     {
         parent::__construct($entity);
 
-        $this->entityChangeSet = &$changeSet;
+        $this->entityChangeSet = & $changeSet;
     }
 
     /**
@@ -84,7 +85,7 @@ class LifecycleUpdateEvent extends LifecycleEvent {
      * Sets the new value of this field.
      *
      * @param string $field
-     * @param mixed  $value
+     * @param mixed $value
      *
      * @return void
      */
@@ -106,7 +107,7 @@ class LifecycleUpdateEvent extends LifecycleEvent {
      */
     private function assertValidField($field)
     {
-        if ( ! isset($this->entityChangeSet[$field])) {
+        if (!isset($this->entityChangeSet[$field])) {
             throw new \InvalidArgumentException(sprintf(
                 'Field "%s" is not a valid field of the entity "%s" in PreUpdateEventArgs.',
                 $field,

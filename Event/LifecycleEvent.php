@@ -13,14 +13,17 @@ use Symfony\Component\EventDispatcher\Event;
 /**
  * LifecycleEvent is used when an entity is created or deleted
  */
-class LifecycleEvent extends Event {
+class LifecycleEvent extends Event
+{
     protected $entity;
 
-    public function __construct($entity) {
+    public function __construct($entity)
+    {
         $this->entity = $entity;
     }
 
-    public function getEntity() {
+    public function getEntity()
+    {
         return $this->entity;
     }
 }
