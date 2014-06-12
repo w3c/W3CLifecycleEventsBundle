@@ -6,12 +6,8 @@
 
 
     <parameters>
-        <parameter key="w3c_lifecycle_events.listener.class">
-            W3C\LifecycleEventsBundle\EventListener\LifecycleEventsListener
-        </parameter>
-        <parameter key="w3c_lifecycle_events.dispatcher.class">
-            W3C\LifecycleEventsBundle\Services\LifecycleEventsDispatcher
-        </parameter>
+        <parameter key="w3c_lifecycle_events.listener.class">W3C\LifecycleEventsBundle\EventListener\LifecycleEventsListener</parameter>
+        <parameter key="w3c_lifecycle_events.dispatcher.class">W3C\LifecycleEventsBundle\Services\LifecycleEventsDispatcher</parameter>
         <parameter key="w3c_lifecycle_events.auto_dispatch"/>
     </parameters>
 
