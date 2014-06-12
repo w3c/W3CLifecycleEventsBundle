@@ -14,6 +14,7 @@ use Doctrine\ORM\Event\PreUpdateEventArgs;
 use Symfony\Component\EventDispatcher\ContainerAwareEventDispatcher;
 use W3C\LifecycleEventsBundle\Event\LifecycleEvent;
 use W3C\LifecycleEventsBundle\Event\LifecycleUpdateEvent;
+use W3C\LifecycleEventsBundle\Event\PreAutoDispatchEvent;
 
 /**
  * LifecycleEventsDispatcher is meant to dispatch entity creation, deletion and updates
@@ -166,12 +167,21 @@ class LifecycleEventsDispatcher
         return $this->updates;
     }
 
+    /**
+     * Is automatic dispatching of events active.
+     * This value has no direct effect on this class but can be use elsewhere
+     * (e.g. in LifecycleEventListener::postFlush())
+     *
+     * @return bool
+     */
     public function getAutoDispatch()
     {
         return $this->autoDispatch;
     }
 
     /**
+     * Set automatic dispatching of events
+     *
      * @param $autoDispatch
      * @return $this
      */
@@ -180,5 +190,13 @@ class LifecycleEventsDispatcher
         $this->autoDispatch = $autoDispatch;
 
         return $this;
+    }
+
+    /**
+     * Send out a preAutoDispatch event
+     */
+    public function preAutoDispatch()
+    {
+        $this->dispatcher->dispatch('w3c.lifecycle.preAutoDispatch', new PreAutoDispatchEvent($this));
     }
 }

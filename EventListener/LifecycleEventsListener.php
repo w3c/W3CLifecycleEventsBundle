@@ -74,6 +74,7 @@ class LifecycleEventsListener
     public function postFlush(PostFlushEventArgs $args)
     {
         if ($this->dispatcher->getAutoDispatch()) {
+            $this->dispatcher->preAutoDispatch();
             $this->dispatcher->dispatchEvents();
         }
     }
