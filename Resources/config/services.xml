@@ -18,6 +18,7 @@
         </service>
         <service id="w3c_lifecycle_events.listener" class="%w3c_lifecycle_events.listener.class%">
             <argument type="service" id="w3c_lifecycle_events.dispatcher"/>
+            <argument type="service" id="annotation_reader"/>
             <tag name="doctrine.event_listener" event="postPersist"/>
             <tag name="doctrine.event_listener" event="postRemove"/>
             <tag name="doctrine.event_listener" event="preUpdate"/>

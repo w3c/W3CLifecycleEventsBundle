@@ -8,9 +8,13 @@
  */
 namespace W3C\LifecycleEventsBundle\EventListener;
 
+use Doctrine\Common\Annotations\Reader;
 use Doctrine\ORM\Event\LifecycleEventArgs;
 use Doctrine\ORM\Event\PostFlushEventArgs;
 use Doctrine\ORM\Event\PreUpdateEventArgs;
+use W3C\LifecycleEventsBundle\Annotation\Create;
+use W3C\LifecycleEventsBundle\Annotation\Delete;
+use W3C\LifecycleEventsBundle\Annotation\Update;
 use W3C\LifecycleEventsBundle\Services\LifecycleEventsDispatcher;
 
 /**
@@ -26,13 +30,20 @@ class LifecycleEventsListener
     private $dispatcher;
 
     /**
+     * @var Reader
+     */
+    private $reader;
+
+    /**
      * Constructs a new instance
      *
      * @param LifecycleEventsDispatcher $dispatcher the dispatcher to fed
+     * @param Reader $reader
      */
-    public function __construct(LifecycleEventsDispatcher $dispatcher)
+    public function __construct(LifecycleEventsDispatcher $dispatcher, Reader $reader)
     {
         $this->dispatcher = $dispatcher;
+        $this->reader     = $reader;
     }
 
     /**
@@ -42,7 +53,13 @@ class LifecycleEventsListener
      */
     public function postPersist(LifecycleEventArgs $args)
     {
-        $this->dispatcher->getCreations()->add($args);
+        $annotation = $this->reader->getClassAnnotation(
+            new \ReflectionClass(get_class($args->getEntity())),
+            Create::class
+        );
+        if ($annotation) {
+            $this->dispatcher->getCreations()->add([$annotation, $args]);
+        }
     }
 
     /**
@@ -52,7 +69,13 @@ class LifecycleEventsListener
      */
     public function postRemove(LifecycleEventArgs $args)
     {
-        $this->dispatcher->getDeletions()->add($args);
+        $annotation = $this->reader->getClassAnnotation(
+            new \ReflectionClass(get_class($args->getEntity())),
+            Delete::class
+        );
+        if ($annotation) {
+            $this->dispatcher->getDeletions()->add([$annotation, $args]);
+        }
     }
 
     /**
@@ -62,7 +85,13 @@ class LifecycleEventsListener
      */
     public function preUpdate(PreUpdateEventArgs $args)
     {
-        $this->dispatcher->getUpdates()->add($args);
+        $annotation = $this->reader->getClassAnnotation(
+            new \ReflectionClass(get_class($args->getEntity())),
+            Update::class
+        );
+        if ($annotation) {
+            $this->dispatcher->getUpdates()->add([$annotation, $args]);
+        }
     }
 
     /**

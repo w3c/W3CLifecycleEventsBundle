@@ -11,7 +11,10 @@ namespace W3C\LifecycleEventsBundle\Services;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\ORM\Event\LifecycleEventArgs;
 use Doctrine\ORM\Event\PreUpdateEventArgs;
-use Symfony\Component\EventDispatcher\ContainerAwareEventDispatcher;
+use Symfony\Component\EventDispatcher\EventDispatcherInterface;
+use W3C\LifecycleEventsBundle\Annotation\Create;
+use W3C\LifecycleEventsBundle\Annotation\Delete;
+use W3C\LifecycleEventsBundle\Annotation\Update;
 use W3C\LifecycleEventsBundle\Event\LifecycleEvent;
 use W3C\LifecycleEventsBundle\Event\LifecycleUpdateEvent;
 use W3C\LifecycleEventsBundle\Event\PreAutoDispatchEvent;
@@ -46,7 +49,7 @@ class LifecycleEventsDispatcher
     /**
      * Symfony's event dispatcher
      *
-     * @var ContainerAwareEventDispatcher
+     * @var EventDispatcherInterface
      */
     private $dispatcher;
 
@@ -60,10 +63,10 @@ class LifecycleEventsDispatcher
     /**
      * Create a new instance
      *
-     * @param ContainerAwareEventDispatcher $dispatcher a Symfony's event dispatcher
+     * @param EventDispatcherInterface $dispatcher a Symfony's event dispatcher
      * @param $autoDispatch
      */
-    public function __construct(ContainerAwareEventDispatcher $dispatcher, $autoDispatch)
+    public function __construct(EventDispatcherInterface $dispatcher, $autoDispatch)
     {
         $this->dispatcher = $dispatcher;
         $this->autoDispatch = $autoDispatch;
@@ -99,12 +102,23 @@ class LifecycleEventsDispatcher
     private function dispatchCreationEvents()
     {
         foreach ($this->creations as $creation) {
-            // We could imagine sending more specialized events there (UserCreated, GroupCreated, ...)
-            // We could also make more checks to avoid doing stupid checks as explained in the last paragraph
-            $this->dispatcher->dispatch(
-                'w3c.lifecycle.created',
-                new LifecycleEvent($creation->getEntity())
-            );
+            /** @var Create $annotation */
+            $annotation = $creation[0];
+            $entity     = $creation[1]->getEntity();
+
+            if ($annotation->event) {
+                $eventName = $annotation->event;
+            } else {
+                $eventName = 'w3c.lifecycle.created';
+            }
+
+            if ($annotation->class) {
+                $event = new $annotation->class($entity);
+            } else {
+                $event = new LifecycleEvent($entity);
+            }
+
+            $this->dispatcher->dispatch($eventName, $event);
         }
     }
 
@@ -114,10 +128,23 @@ class LifecycleEventsDispatcher
     private function dispatchDeletionEvents()
     {
         foreach ($this->deletions as $deletion) {
-            $this->dispatcher->dispatch(
-                'w3c.lifecycle.deleted',
-                new LifecycleEvent($deletion->getEntity())
-            );
+            /** @var Delete $annotation */
+            $annotation = $deletion[0];
+            $entity     = $deletion[1]->getEntity();
+
+            if ($annotation->event) {
+                $eventName = $annotation->event;
+            } else {
+                $eventName = 'w3c.lifecycle.created';
+            }
+
+            if ($annotation->class) {
+                $event = new $annotation->class($entity);
+            } else {
+                $event = new LifecycleEvent($entity);
+            }
+
+            $this->dispatcher->dispatch($eventName, $event);
         }
     }
 
@@ -127,13 +154,24 @@ class LifecycleEventsDispatcher
     private function dispatchUpdateEvents()
     {
         foreach ($this->updates as $update) {
-            $this->dispatcher->dispatch(
-                'w3c.lifecycle.updated',
-                new LifecycleUpdateEvent(
-                    $update->getEntity(),
-                    $update->getEntityChangeSet()
-                )
-            );
+            /** @var Update $annotation */
+            $annotation = $update[0];
+            $entity     = $update[1]->getEntity();
+            $changes    = $update[1]->getEntityChangeSet();
+
+            if ($annotation->event) {
+                $eventName = $annotation->event;
+            } else {
+                $eventName = 'w3c.lifecycle.updated';
+            }
+
+            if ($annotation->class) {
+                $event = new $annotation->class($entity);
+            } else {
+                $event = new LifecycleUpdateEvent($entity, $changes);
+            }
+
+            $this->dispatcher->dispatch($eventName, $event);
         }
     }
 
