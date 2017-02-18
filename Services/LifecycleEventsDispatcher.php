@@ -11,6 +11,7 @@ namespace W3C\LifecycleEventsBundle\Services;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\ORM\Event\LifecycleEventArgs;
 use Doctrine\ORM\Event\PreUpdateEventArgs;
+use Doctrine\ORM\PersistentCollection;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use W3C\LifecycleEventsBundle\Annotation\Create;
 use W3C\LifecycleEventsBundle\Annotation\Delete;
@@ -104,7 +105,9 @@ class LifecycleEventsDispatcher
         foreach ($this->creations as $creation) {
             /** @var Create $annotation */
             $annotation = $creation[0];
-            $entity     = $creation[1]->getEntity();
+            /** @var LifecycleEventArgs $eventArgs */
+            $eventArgs  = $creation[1];
+            $entity     = $eventArgs->getEntity();
 
             if ($annotation->event) {
                 $eventName = $annotation->event;
@@ -130,7 +133,9 @@ class LifecycleEventsDispatcher
         foreach ($this->deletions as $deletion) {
             /** @var Delete $annotation */
             $annotation = $deletion[0];
-            $entity     = $deletion[1]->getEntity();
+            /** @var LifecycleEventArgs $eventArgs */
+            $eventArgs  = $deletion[1];
+            $entity     = $eventArgs->getEntity();
 
             if ($annotation->event) {
                 $eventName = $annotation->event;
@@ -155,9 +160,10 @@ class LifecycleEventsDispatcher
     {
         foreach ($this->updates as $update) {
             /** @var Update $annotation */
-            $annotation = $update[0];
-            $entity     = $update[1]->getEntity();
-            $changes    = $update[1]->getEntityChangeSet();
+            $annotation         = $update[0];
+            $entity             = $update[1];
+            $propertiesChanges  = $update[2];
+            $collectionsChanges = $update[3];
 
             if ($annotation->event) {
                 $eventName = $annotation->event;
@@ -168,7 +174,7 @@ class LifecycleEventsDispatcher
             if ($annotation->class) {
                 $event = new $annotation->class($entity);
             } else {
-                $event = new LifecycleUpdateEvent($entity, $changes);
+                $event = new LifecycleUpdateEvent($entity, $propertiesChanges, $collectionsChanges);
             }
 
             $this->dispatcher->dispatch($eventName, $event);

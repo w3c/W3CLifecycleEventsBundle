@@ -12,6 +12,7 @@ use Doctrine\Common\Annotations\Reader;
 use Doctrine\ORM\Event\LifecycleEventArgs;
 use Doctrine\ORM\Event\PostFlushEventArgs;
 use Doctrine\ORM\Event\PreUpdateEventArgs;
+use Doctrine\ORM\PersistentCollection;
 use W3C\LifecycleEventsBundle\Annotation\Create;
 use W3C\LifecycleEventsBundle\Annotation\Delete;
 use W3C\LifecycleEventsBundle\Annotation\Update;
@@ -90,7 +91,20 @@ class LifecycleEventsListener
             Update::class
         );
         if ($annotation) {
-            $this->dispatcher->getUpdates()->add([$annotation, $args]);
+            $collectionsChanges = null;
+            /** @var PersistentCollection $u */
+            foreach ($args->getEntityManager()->getUnitOfWork()->getScheduledCollectionUpdates() as $u) {
+                $collectionsChanges[$u->getMapping()['fieldName']] = [
+                    'deleted'  => $u->getDeleteDiff(),
+                    'inserted' => $u->getInsertDiff()
+                ];
+            }
+            $this->dispatcher->getUpdates()->add([
+                $annotation,
+                $args->getEntity(),
+                $args->getEntityChangeSet(),
+                $collectionsChanges
+            ]);
         }
     }
 

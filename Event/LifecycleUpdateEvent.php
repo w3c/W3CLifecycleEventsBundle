@@ -16,29 +16,45 @@ class LifecycleUpdateEvent extends LifecycleEvent
     /**
      * @var array
      */
-    private $entityChangeSet;
+    private $propertiesChangeSet;
+
+    /**
+     * @var array
+     */
+    private $collectionsChangeSet;
 
     /**
      * Constructor.
      *
      * @param object $entity
-     * @param array $changeSet
+     * @param array $propertiesChangeSet
+     * @param array $collectionsChangeSet
      */
-    public function __construct($entity, array $changeSet)
+    public function __construct($entity, array $propertiesChangeSet = null, array $collectionsChangeSet = null)
     {
         parent::__construct($entity);
 
-        $this->entityChangeSet = & $changeSet;
+        $this->propertiesChangeSet = & $propertiesChangeSet;
+        $this->collectionsChangeSet = & $collectionsChangeSet;
     }
 
     /**
-     * Retrieves the entity changeset.
+     * Retrieves the entity's properties changeset.
      *
      * @return array
      */
-    public function getEntityChangeSet()
+    public function getPropertiesChangeSet()
     {
-        return $this->entityChangeSet;
+        return $this->propertiesChangeSet;
+    }
+
+    /**
+     * Retrieve the entity's collections changeset
+     * @return array
+     */
+    public function getCollectionsChangeSet()
+    {
+        return $this->collectionsChangeSet;
     }
 
     /**
@@ -50,7 +66,7 @@ class LifecycleUpdateEvent extends LifecycleEvent
      */
     public function hasChangedField($field)
     {
-        return isset($this->entityChangeSet[$field]);
+        return isset($this->propertiesChangeSet[$field]) || isset($this->collectionsChangeSet[$field]);
     }
 
     /**
@@ -64,7 +80,7 @@ class LifecycleUpdateEvent extends LifecycleEvent
     {
         $this->assertValidField($field);
 
-        return $this->entityChangeSet[$field][0];
+        return $this->propertiesChangeSet[$field][0];
     }
 
     /**
@@ -78,7 +94,7 @@ class LifecycleUpdateEvent extends LifecycleEvent
     {
         $this->assertValidField($field);
 
-        return $this->entityChangeSet[$field][1];
+        return $this->propertiesChangeSet[$field][1];
     }
 
     /**
@@ -93,7 +109,21 @@ class LifecycleUpdateEvent extends LifecycleEvent
     {
         $this->assertValidField($field);
 
-        $this->entityChangeSet[$field][1] = $value;
+        $this->propertiesChangeSet[$field][1] = $value;
+    }
+
+    public function getDeletedElements($field)
+    {
+        $this->assertValidField($field);
+
+        return $this->collectionsChangeSet[$field]['deleted'];
+    }
+
+    public function getAddedElements($field)
+    {
+        $this->assertValidField($field);
+
+        return $this->collectionsChangeSet[$field]['inserted'];
     }
 
     /**
@@ -107,9 +137,9 @@ class LifecycleUpdateEvent extends LifecycleEvent
      */
     private function assertValidField($field)
     {
-        if (!isset($this->entityChangeSet[$field])) {
+        if (!isset($this->propertiesChangeSet[$field]) && !isset($this->collectionsChangeSet[$field])) {
             throw new \InvalidArgumentException(sprintf(
-                'Field "%s" is not a valid field of the entity "%s" in PreUpdateEventArgs.',
+                'Field "%s" is not a valid field of the entity "%s" org has not changed.',
                 $field,
                 get_class($this->getEntity())
             ));
