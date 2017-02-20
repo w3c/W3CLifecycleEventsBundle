@@ -102,6 +102,11 @@ class LifecycleEventsListener
             $collectionsChanges = null;
             /** @var PersistentCollection $u */
             foreach ($args->getEntityManager()->getUnitOfWork()->getScheduledCollectionUpdates() as $u) {
+                // Make sure $u belongs to the entity we are working on
+                if ($u->getOwner() !== $entity) {
+                    continue;
+                }
+
                 $property         = $u->getMapping()['fieldName'];
                 $ignoreAnnotation = $this->reader->getPropertyAnnotation(
                     new \ReflectionProperty($class, $property),
