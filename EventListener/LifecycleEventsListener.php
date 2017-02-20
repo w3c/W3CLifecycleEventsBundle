@@ -10,12 +10,11 @@ namespace W3C\LifecycleEventsBundle\EventListener;
 
 use Doctrine\Common\Annotations\Reader;
 use Doctrine\ORM\Event\LifecycleEventArgs;
-use Doctrine\ORM\Event\PostFlushEventArgs;
 use Doctrine\ORM\Event\PreUpdateEventArgs;
 use Doctrine\ORM\PersistentCollection;
 use W3C\LifecycleEventsBundle\Annotation\Create;
 use W3C\LifecycleEventsBundle\Annotation\Delete;
-use W3C\LifecycleEventsBundle\Annotation\Change;
+use W3C\LifecycleEventsBundle\Annotation\IgnoreClassUpdates;
 use W3C\LifecycleEventsBundle\Annotation\Update;
 use W3C\LifecycleEventsBundle\Services\LifecycleEventsDispatcher;
 
@@ -87,23 +86,48 @@ class LifecycleEventsListener
      */
     public function preUpdate(PreUpdateEventArgs $args)
     {
-        $annotation = $this->reader->getClassAnnotation(
-            new \ReflectionClass(get_class($args->getEntity())),
+        $entity                   = $args->getEntity();
+        /** @var Update $annotation */
+        $annotation               = $this->reader->getClassAnnotation(
+            new \ReflectionClass(get_class($entity)),
             Update::class
         );
-        if ($annotation) {
+        if ($annotation && $annotation->monitor_collections) {
+            // Build list of collection changes with @IgnoreclassUpdates properties removed
             $collectionsChanges = null;
             /** @var PersistentCollection $u */
             foreach ($args->getEntityManager()->getUnitOfWork()->getScheduledCollectionUpdates() as $u) {
-                $collectionsChanges[$u->getMapping()['fieldName']] = [
-                    'deleted'  => $u->getDeleteDiff(),
-                    'inserted' => $u->getInsertDiff()
-                ];
+                $property         = $u->getMapping()['fieldName'];
+                $ignoreAnnotation = $this->reader->getPropertyAnnotation(
+                    new \ReflectionProperty(get_class($entity), $property),
+                    IgnoreClassUpdates::class
+                );
+
+                if (!$ignoreAnnotation) {
+                    $collectionsChanges[$property] = [
+                        'deleted'  => $u->getDeleteDiff(),
+                        'inserted' => $u->getInsertDiff()
+                    ];
+                }
             }
+
+            // Build list of changes with @IgnoreclassUpdates properties removed
+            $changes = [];
+            foreach ($args->getEntityChangeSet() as $property => $change) {
+                $ignoreAnnotation = $this->reader->getPropertyAnnotation(
+                    new \ReflectionProperty(get_class($entity), $property),
+                    IgnoreClassUpdates::class
+                );
+
+                if (!$ignoreAnnotation) {
+                    $changes[$property] = $change;
+                }
+            }
+
             $this->dispatcher->addUpdate([
                 $annotation,
-                $args->getEntity(),
-                $args->getEntityChangeSet(),
+                $entity,
+                $changes,
                 $collectionsChanges
             ]);
         }
