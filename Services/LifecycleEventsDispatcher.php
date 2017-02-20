@@ -14,9 +14,6 @@ use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use W3C\LifecycleEventsBundle\Annotation\Create;
 use W3C\LifecycleEventsBundle\Annotation\Delete;
 use W3C\LifecycleEventsBundle\Annotation\Update;
-use W3C\LifecycleEventsBundle\Event\LifecycleEvent;
-use W3C\LifecycleEventsBundle\Event\LifecyclePropertyChangedEvent;
-use W3C\LifecycleEventsBundle\Event\LifecycleUpdateEvent;
 use W3C\LifecycleEventsBundle\Event\PreAutoDispatchEvent;
 
 /**
@@ -117,11 +114,7 @@ class LifecycleEventsDispatcher
             $eventArgs  = $creation[1];
             $entity     = $eventArgs->getEntity();
 
-            $eventName  = $annotation->event ? $annotation->event : 'w3c.lifecycle.created';
-            $eventClass = $annotation->class ? $annotation->class : LifecycleEvent::class;
-            $event      = new $eventClass($entity);
-
-            $this->dispatcher->dispatch($eventName, $event);
+            $this->dispatcher->dispatch($annotation->event, new $annotation->class($entity));
         }
     }
 
@@ -137,11 +130,7 @@ class LifecycleEventsDispatcher
             $eventArgs  = $deletion[1];
             $entity     = $eventArgs->getEntity();
 
-            $eventName  = $annotation->event ? $annotation->event : 'w3c.lifecycle.deleted';
-            $eventClass = $annotation->class ? $annotation->class : LifecycleEvent::class;
-            $event      = new $eventClass($entity);
-
-            $this->dispatcher->dispatch($eventName, $event);
+            $this->dispatcher->dispatch($annotation->event, new $annotation->class($entity));
         }
     }
 
@@ -157,11 +146,10 @@ class LifecycleEventsDispatcher
             $propertiesChanges  = $update[2];
             $collectionsChanges = $update[3];
 
-            $eventName  = $annotation->event ? $annotation->event : 'w3c.lifecycle.updated';
-            $eventClass = $annotation->class ? $annotation->class : LifecycleUpdateEvent::class;
-            $event = new $eventClass($entity, $propertiesChanges, $collectionsChanges);
-
-            $this->dispatcher->dispatch($eventName, $event);
+            $this->dispatcher->dispatch(
+                $annotation->event,
+                new $annotation->class($entity, $propertiesChanges, $collectionsChanges)
+            );
         }
     }
 
@@ -178,11 +166,10 @@ class LifecycleEventsDispatcher
             $oldValue   = $propertyChange[3];
             $newValue   = $propertyChange[4];
 
-            $eventName  = $annotation->event ? $annotation->event : 'w3c.lifecycle.property_changed';
-            $eventClass = $annotation->class ? $annotation->class : LifecyclePropertyChangedEvent::class;
-            $event = new $eventClass($entity, $property, $oldValue, $newValue);
-
-            $this->dispatcher->dispatch($eventName, $event);
+            $this->dispatcher->dispatch(
+                $annotation->event,
+                new $annotation->class($entity, $property, $oldValue, $newValue)
+            );
         }
     }
 

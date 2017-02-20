@@ -17,6 +17,9 @@
 
 namespace W3C\LifecycleEventsBundle\Annotation;
 
+use W3C\LifecycleEventsBundle\Event\Definitions\LifecycleEvents;
+use W3C\LifecycleEventsBundle\Event\LifecycleUpdateEvent;
+
 /**
  * @Annotation
  * @Target("CLASS")
@@ -26,11 +29,15 @@ class Update
     /**
      * @var string
      */
-    public $event;
+    public $event = LifecycleEvents::UPDATED;
 
     /**
      * @var string
      */
-    public $class;
+    public $class = LifecycleUpdateEvent::class;
 
+    /**
+     * @var bool
+     */
+    public $monitor_collections = true;
 }

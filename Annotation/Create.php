@@ -17,6 +17,9 @@
 
 namespace W3C\LifecycleEventsBundle\Annotation;
 
+use W3C\LifecycleEventsBundle\Event\Definitions\LifecycleEvents;
+use W3C\LifecycleEventsBundle\Event\LifecycleEvent;
+
 /**
  * @Annotation
  * @Target("CLASS")
@@ -26,11 +29,11 @@ class Create
     /**
      * @var string
      */
-    public $event;
+    public $event = LifecycleEvents::CREATED;
 
     /**
      * @var string
      */
-    public $class;
+    public $class = LifecycleEvent::class;
 
 }
