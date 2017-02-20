@@ -108,7 +108,7 @@ class LifecycleEventsListener
     }
 
     /**
-     * Return an array of collection changes belonging to $entity with @IgnoreclassUpdates properties removed
+     * Return an array of collection changes belonging to $entity ignoring those marked with  @IgnoreclassUpdates
      *
      * @param PreUpdateEventArgs $args
      * @param mixed $entity
@@ -142,8 +142,7 @@ class LifecycleEventsListener
     }
 
     /**
-     * Return an array of changes to properties (not including collections) ignoring
-     * those marked with @IgnoreclassUpdates
+     * Return an array of changes to properties (not including collections) ignoring those marked with @IgnoreclassUpdates
      *
      * @param PreUpdateEventArgs $args
      * @param mixed $entity
