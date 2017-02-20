@@ -93,54 +93,76 @@ class LifecycleEventsListener
         $class  = ClassUtils::getRealClass(get_class($entity));
 
         /** @var Update $annotation */
-        $annotation               = $this->reader->getClassAnnotation(
+        $annotation = $this->reader->getClassAnnotation(
             new \ReflectionClass($class),
             Update::class
         );
-        if ($annotation && $annotation->monitor_collections) {
-            // Build list of collection changes with @IgnoreclassUpdates properties removed
-            $collectionsChanges = null;
-            /** @var PersistentCollection $u */
-            foreach ($args->getEntityManager()->getUnitOfWork()->getScheduledCollectionUpdates() as $u) {
-                // Make sure $u belongs to the entity we are working on
-                if ($u->getOwner() !== $entity) {
-                    continue;
-                }
-
-                $property         = $u->getMapping()['fieldName'];
-                $ignoreAnnotation = $this->reader->getPropertyAnnotation(
-                    new \ReflectionProperty($class, $property),
-                    IgnoreClassUpdates::class
-                );
-
-                if (!$ignoreAnnotation) {
-                    $collectionsChanges[$property] = [
-                        'deleted'  => $u->getDeleteDiff(),
-                        'inserted' => $u->getInsertDiff()
-                    ];
-                }
-            }
-
-            // Build list of changes with @IgnoreclassUpdates properties removed
-            $changes = [];
-            foreach ($args->getEntityChangeSet() as $property => $change) {
-                $ignoreAnnotation = $this->reader->getPropertyAnnotation(
-                    new \ReflectionProperty($class, $property),
-                    IgnoreClassUpdates::class
-                );
-
-                if (!$ignoreAnnotation) {
-                    $changes[$property] = $change;
-                }
-            }
-
+        if ($annotation) {
             $this->dispatcher->addUpdate([
                 $annotation,
                 $entity,
-                $changes,
-                $collectionsChanges
+                $this->buildChangeSet($args, $entity),
+                $annotation->monitor_collections ? $this->buildCollectionChanges($args, $entity) : null
             ]);
         }
+    }
+
+    /**
+     * Return an array of collection changes belonging to $entity ignoring those marked with  @IgnoreclassUpdates
+     *
+     * @param PreUpdateEventArgs $args
+     * @param mixed $entity
+     *
+     * @return array
+     */
+    private function buildCollectionChanges(PreUpdateEventArgs $args, $entity)
+    {
+        $collectionsChanges = null;
+        /** @var PersistentCollection $u */
+        foreach ($args->getEntityManager()->getUnitOfWork()->getScheduledCollectionUpdates() as $u) {
+            // Make sure $u belongs to the entity we are working on
+            if ($u->getOwner() !== $entity) {
+                continue;
+            }
+
+            $property         = $u->getMapping()['fieldName'];
+            $ignoreAnnotation = $this->reader->getPropertyAnnotation(
+                new \ReflectionProperty(ClassUtils::getRealClass(get_class($entity)), $property),
+                IgnoreClassUpdates::class
+            );
+
+            if (!$ignoreAnnotation) {
+                $collectionsChanges[$property] = [
+                    'deleted'  => $u->getDeleteDiff(),
+                    'inserted' => $u->getInsertDiff()
+                ];
+            }
+        }
+        return $collectionsChanges;
+    }
+
+    /**
+     * Return an array of changes to properties (not including collections) ignoring those marked with @IgnoreclassUpdates
+     *
+     * @param PreUpdateEventArgs $args
+     * @param mixed $entity
+     *
+     * @return array
+     */
+    private function buildChangeSet(PreUpdateEventArgs $args, $entity)
+    {
+        $changes = [];
+        foreach ($args->getEntityChangeSet() as $property => $change) {
+            $ignoreAnnotation = $this->reader->getPropertyAnnotation(
+                new \ReflectionProperty(ClassUtils::getRealClass(get_class($entity)), $property),
+                IgnoreClassUpdates::class
+            );
+
+            if (!$ignoreAnnotation) {
+                $changes[$property] = $change;
+            }
+        }
+        return $changes;
     }
 }
 
