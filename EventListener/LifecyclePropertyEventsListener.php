@@ -9,6 +9,7 @@
 namespace W3C\LifecycleEventsBundle\EventListener;
 
 use Doctrine\Common\Annotations\Reader;
+use Doctrine\Common\Util\ClassUtils;
 use Doctrine\ORM\Event\LifecycleEventArgs;
 use Doctrine\ORM\Event\PostFlushEventArgs;
 use Doctrine\ORM\Event\PreUpdateEventArgs;
@@ -51,8 +52,9 @@ class LifecyclePropertyEventsListener
     public function preUpdate(PreUpdateEventArgs $args)
     {
         foreach ($args->getEntityChangeSet() as $property => $change) {
+            $realClass = ClassUtils::getRealClass(get_class($args->getEntity()));
             $annotation = $this->reader->getPropertyAnnotation(
-                new \ReflectionProperty(get_class($args->getEntity()), $property),
+                new \ReflectionProperty($realClass, $property),
                 Change::class
             );
 

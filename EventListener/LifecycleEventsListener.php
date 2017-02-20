@@ -9,6 +9,7 @@
 namespace W3C\LifecycleEventsBundle\EventListener;
 
 use Doctrine\Common\Annotations\Reader;
+use Doctrine\Common\Util\ClassUtils;
 use Doctrine\ORM\Event\LifecycleEventArgs;
 use Doctrine\ORM\Event\PreUpdateEventArgs;
 use Doctrine\ORM\PersistentCollection;
@@ -54,8 +55,9 @@ class LifecycleEventsListener
      */
     public function postPersist(LifecycleEventArgs $args)
     {
+        $class      = ClassUtils::getRealClass(get_class($args->getEntity()));
         $annotation = $this->reader->getClassAnnotation(
-            new \ReflectionClass(get_class($args->getEntity())),
+            new \ReflectionClass($class),
             Create::class
         );
         if ($annotation) {
@@ -70,8 +72,9 @@ class LifecycleEventsListener
      */
     public function postRemove(LifecycleEventArgs $args)
     {
+        $class      = ClassUtils::getRealClass(get_class($args->getEntity()));
         $annotation = $this->reader->getClassAnnotation(
-            new \ReflectionClass(get_class($args->getEntity())),
+            new \ReflectionClass($class),
             Delete::class
         );
         if ($annotation) {
@@ -86,10 +89,12 @@ class LifecycleEventsListener
      */
     public function preUpdate(PreUpdateEventArgs $args)
     {
-        $entity                   = $args->getEntity();
+        $entity = $args->getEntity();
+        $class  = ClassUtils::getRealClass(get_class($entity));
+
         /** @var Update $annotation */
         $annotation               = $this->reader->getClassAnnotation(
-            new \ReflectionClass(get_class($entity)),
+            new \ReflectionClass($class),
             Update::class
         );
         if ($annotation && $annotation->monitor_collections) {
@@ -99,7 +104,7 @@ class LifecycleEventsListener
             foreach ($args->getEntityManager()->getUnitOfWork()->getScheduledCollectionUpdates() as $u) {
                 $property         = $u->getMapping()['fieldName'];
                 $ignoreAnnotation = $this->reader->getPropertyAnnotation(
-                    new \ReflectionProperty(get_class($entity), $property),
+                    new \ReflectionProperty($class, $property),
                     IgnoreClassUpdates::class
                 );
 
@@ -115,7 +120,7 @@ class LifecycleEventsListener
             $changes = [];
             foreach ($args->getEntityChangeSet() as $property => $change) {
                 $ignoreAnnotation = $this->reader->getPropertyAnnotation(
-                    new \ReflectionProperty(get_class($entity), $property),
+                    new \ReflectionProperty($class, $property),
                     IgnoreClassUpdates::class
                 );
 
