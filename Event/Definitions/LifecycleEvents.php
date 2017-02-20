@@ -49,6 +49,16 @@ final class LifecycleEvents {
     const PROPERTY_CHANGED = 'w3c.lifecycle.property_changed';
 
     /**
+     * Thrown each time a collection of an entity is changed
+     *
+     * The event listener receives an
+     * W3C/LifecycleBundle\Event\LifecycleCollectionChangedEvent instance.
+     *
+     * @var string
+     */
+    const COLLECTION_CHANGED = 'w3c.lifecycle.collection_changed';
+
+    /**
      * Thrown each time an entity is deleted
      *
      * The event listener receives an

@@ -11,9 +11,9 @@ namespace W3C\LifecycleEventsBundle\Services;
 use Doctrine\ORM\Event\LifecycleEventArgs;
 use Doctrine\ORM\Event\PreUpdateEventArgs;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
-use W3C\LifecycleEventsBundle\Annotation\Create;
-use W3C\LifecycleEventsBundle\Annotation\Delete;
-use W3C\LifecycleEventsBundle\Annotation\Update;
+use W3C\LifecycleEventsBundle\Event\Definitions\LifecycleEvents;
+use W3C\LifecycleEventsBundle\Event\LifecycleCollectionChangedEvent;
+use W3C\LifecycleEventsBundle\Event\LifecyclePropertyChangedEvent;
 use W3C\LifecycleEventsBundle\Event\PreAutoDispatchEvent;
 
 /**
@@ -51,6 +51,13 @@ class LifecycleEventsDispatcher
     private $propertyChanges;
 
     /**
+     * List of collection change events
+     *
+     * @var array
+     */
+    private $collectionChanges;
+
+    /**
      * Symfony's event dispatcher
      *
      * @var EventDispatcherInterface
@@ -86,6 +93,7 @@ class LifecycleEventsDispatcher
         $this->deletions = [];
         $this->updates = [];
         $this->propertyChanges = [];
+        $this->collectionChanges = [];
     }
 
     /**
@@ -97,6 +105,7 @@ class LifecycleEventsDispatcher
         $this->dispatchDeletionEvents();
         $this->dispatchUpdateEvents();
         $this->dispatchPropertyChangeEvents();
+        $this->dispatchCollectionChangeEvents();
 
         // Reinitialize to make sure no events are sent twice
         $this->init();
@@ -108,7 +117,6 @@ class LifecycleEventsDispatcher
     private function dispatchCreationEvents()
     {
         foreach ($this->creations as $creation) {
-            /** @var Create $annotation */
             $annotation = $creation[0];
             /** @var LifecycleEventArgs $eventArgs */
             $eventArgs  = $creation[1];
@@ -124,7 +132,6 @@ class LifecycleEventsDispatcher
     private function dispatchDeletionEvents()
     {
         foreach ($this->deletions as $deletion) {
-            /** @var Delete $annotation */
             $annotation = $deletion[0];
             /** @var LifecycleEventArgs $eventArgs */
             $eventArgs  = $deletion[1];
@@ -140,11 +147,7 @@ class LifecycleEventsDispatcher
     private function dispatchUpdateEvents()
     {
         foreach ($this->updates as $update) {
-            /** @var Update $annotation */
-            $annotation         = $update[0];
-            $entity             = $update[1];
-            $propertiesChanges  = $update[2];
-            $collectionsChanges = $update[3];
+            list($annotation, $entity, $propertiesChanges, $collectionsChanges) = $update;
 
             $this->dispatcher->dispatch(
                 $annotation->event,
@@ -159,16 +162,32 @@ class LifecycleEventsDispatcher
     private function dispatchPropertyChangeEvents()
     {
         foreach ($this->propertyChanges as $propertyChange) {
-            /** @var Update $annotation */
-            $annotation = $propertyChange[0];
-            $entity     = $propertyChange[1];
-            $property   = $propertyChange[2];
-            $oldValue   = $propertyChange[3];
-            $newValue   = $propertyChange[4];
+            list($annotation, $entity, $property, $oldValue, $newValue) = $propertyChange;
 
             $this->dispatcher->dispatch(
                 $annotation->event,
                 new $annotation->class($entity, $property, $oldValue, $newValue)
+            );
+        }
+    }
+
+    /**
+     * Dispatch collection change events to listeners of w3c.lifecycle.collection_changed (or custom event name)
+     */
+    private function dispatchCollectionChangeEvents()
+    {
+        foreach ($this->collectionChanges as $collectionChange) {
+            list($annotation, $entity, $property, $deleted, $added) = $collectionChange;
+            if ($annotation->event === LifecycleEvents::PROPERTY_CHANGED) {
+                $annotation->event = LifecycleEvents::COLLECTION_CHANGED;
+            }
+            if($annotation->class === LifecyclePropertyChangedEvent::class) {
+                $annotation->class = LifecycleCollectionChangedEvent::class;
+            }
+
+            $this->dispatcher->dispatch(
+                $annotation->event,
+                new $annotation->class($entity, $property, $deleted, $added)
             );
         }
     }
@@ -226,6 +245,16 @@ class LifecycleEventsDispatcher
     public function addPropertyChange($array)
     {
         $this->propertyChanges[] = $array;
+    }
+
+    public function getCollectionChanges()
+    {
+        return $this->collectionChanges;
+    }
+
+    public function addCollectionChange($array)
+    {
+        $this->collectionChanges[] = $array;
     }
 
     /**
