@@ -3,4 +3,4 @@ before_script:
 
 test:
     script:
-        - ./bin/phpunit Tests
+        - ./vendor/bin/phpunit Tests
