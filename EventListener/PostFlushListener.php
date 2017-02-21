@@ -8,15 +8,7 @@
  */
 namespace W3C\LifecycleEventsBundle\EventListener;
 
-use Doctrine\Common\Annotations\Reader;
-use Doctrine\ORM\Event\LifecycleEventArgs;
 use Doctrine\ORM\Event\PostFlushEventArgs;
-use Doctrine\ORM\Event\PreUpdateEventArgs;
-use Doctrine\ORM\PersistentCollection;
-use W3C\LifecycleEventsBundle\Annotation\Create;
-use W3C\LifecycleEventsBundle\Annotation\Delete;
-use W3C\LifecycleEventsBundle\Annotation\Change;
-use W3C\LifecycleEventsBundle\Annotation\Update;
 use W3C\LifecycleEventsBundle\Services\LifecycleEventsDispatcher;
 
 /**
