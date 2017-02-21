@@ -15,22 +15,14 @@
  * limitations under the License.
  */
 
-namespace W3C\LifecycleEventsBundle\Tests\Annotation\Fixtures;
+namespace W3C\LifecycleEventsBundle\Tests\Services\Events;
 
-use W3C\LifecycleEventsBundle\Annotation as On;
 
-/**
- * @On\Create()
- * @On\Delete()
- * @On\Update()
- */
-class User
+use Symfony\Component\EventDispatcher\Event;
+
+class MyCollectionChangeEvent extends Event
 {
-    /**
-     * @On\Change()
-     * @On\IgnoreClassUpdates()
-     */
-    public $name;
-
-    public $friends;
+    public function __construct($entity, $property, $deleted, $inserted)
+    {
+    }
 }
