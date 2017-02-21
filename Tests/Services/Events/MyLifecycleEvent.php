@@ -20,9 +20,9 @@ namespace W3C\LifecycleEventsBundle\Tests\Services\Events;
 
 use Symfony\Component\EventDispatcher\Event;
 
-class MyCollectionChangeEvent extends Event
+class MyLifecycleEvent extends Event
 {
-    public function __construct($entity, $property, $deleted, $inserted)
+    public function __construct($entity)
     {
     }
 }
