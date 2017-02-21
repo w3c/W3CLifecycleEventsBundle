@@ -46,35 +46,11 @@ class LifecyclePropertyChangedEvent extends LifecycleEvent
     }
 
     /**
-     * @return mixed
-     */
-    public function getEntity()
-    {
-        return $this->entity;
-    }
-
-    /**
-     * @param mixed $entity
-     */
-    public function setEntity($entity)
-    {
-        $this->entity = $entity;
-    }
-
-    /**
      * @return string
      */
     public function getProperty()
     {
         return $this->property;
-    }
-
-    /**
-     * @param string $property
-     */
-    public function setProperty($property)
-    {
-        $this->property = $property;
     }
 
     /**
@@ -86,26 +62,10 @@ class LifecyclePropertyChangedEvent extends LifecycleEvent
     }
 
     /**
-     * @param mixed $oldValue
-     */
-    public function setOldValue($oldValue)
-    {
-        $this->oldValue = $oldValue;
-    }
-
-    /**
      * @return mixed
      */
     public function getNewValue()
     {
         return $this->newValue;
-    }
-
-    /**
-     * @param mixed $newValue
-     */
-    public function setNewValue($newValue)
-    {
-        $this->newValue = $newValue;
     }
 }

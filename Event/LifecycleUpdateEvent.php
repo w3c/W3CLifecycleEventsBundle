@@ -9,7 +9,7 @@
 namespace W3C\LifecycleEventsBundle\Event;
 
 /**
- * LifecycleUpdateEvent is used when an entity is created or deleted
+ * LifecycleUpdateEvent is used when an entity is updated
  */
 class LifecycleUpdateEvent extends LifecycleEvent
 {
@@ -34,8 +34,8 @@ class LifecycleUpdateEvent extends LifecycleEvent
     {
         parent::__construct($entity);
 
-        $this->propertiesChangeSet = & $propertiesChangeSet;
-        $this->collectionsChangeSet = & $collectionsChangeSet;
+        $this->propertiesChangeSet = $propertiesChangeSet;
+        $this->collectionsChangeSet = $collectionsChangeSet;
     }
 
     /**
@@ -95,21 +95,6 @@ class LifecycleUpdateEvent extends LifecycleEvent
         $this->assertValidField($field);
 
         return $this->propertiesChangeSet[$field][1];
-    }
-
-    /**
-     * Sets the new value of this field.
-     *
-     * @param string $field
-     * @param mixed $value
-     *
-     * @return void
-     */
-    public function setNewValue($field, $value)
-    {
-        $this->assertValidField($field);
-
-        $this->propertiesChangeSet[$field][1] = $value;
     }
 
     public function getDeletedElements($field)
