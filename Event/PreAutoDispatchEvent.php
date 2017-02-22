@@ -35,6 +35,6 @@ class PreAutoDispatchEvent extends Event
      */
     public function getDispatcher()
     {
-        return $this->getDispatcher();
+        return $this->dispatcher;
     }
 }
