@@ -78,7 +78,7 @@ class LifecycleUpdateEvent extends LifecycleEvent
      */
     public function getOldValue($field)
     {
-        $this->assertValidField($field);
+        $this->assertValidProperty($field);
 
         return $this->propertiesChangeSet[$field][0];
     }
@@ -92,21 +92,21 @@ class LifecycleUpdateEvent extends LifecycleEvent
      */
     public function getNewValue($field)
     {
-        $this->assertValidField($field);
+        $this->assertValidProperty($field);
 
         return $this->propertiesChangeSet[$field][1];
     }
 
     public function getDeletedElements($field)
     {
-        $this->assertValidField($field);
+        $this->assertValidCollection($field);
 
         return $this->collectionsChangeSet[$field]['deleted'];
     }
 
     public function getAddedElements($field)
     {
-        $this->assertValidField($field);
+        $this->assertValidCollection($field);
 
         return $this->collectionsChangeSet[$field]['inserted'];
     }
@@ -120,11 +120,31 @@ class LifecycleUpdateEvent extends LifecycleEvent
      *
      * @throws \InvalidArgumentException
      */
-    private function assertValidField($field)
+    private function assertValidProperty($field)
     {
-        if (!isset($this->propertiesChangeSet[$field]) && !isset($this->collectionsChangeSet[$field])) {
+        if (!isset($this->propertiesChangeSet[$field])) {
             throw new \InvalidArgumentException(sprintf(
                 'Field "%s" is not a valid field of the entity "%s" org has not changed.',
+                $field,
+                get_class($this->getEntity())
+            ));
+        }
+    }
+
+    /**
+     * Asserts the field exists in changeset.
+     *
+     * @param string $field
+     *
+     * @return void
+     *
+     * @throws \InvalidArgumentException
+     */
+    private function assertValidCollection($field)
+    {
+        if (!isset($this->collectionsChangeSet[$field])) {
+            throw new \InvalidArgumentException(sprintf(
+                'Field "%s" is not a valid collection of the entity "%s" org has not changed.',
                 $field,
                 get_class($this->getEntity())
             ));
