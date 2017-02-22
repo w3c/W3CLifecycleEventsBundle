@@ -1,3 +1,4 @@
+[![build status](https://gitlab.w3.org/symfony-bundles/w3clifecycleeventsbundle/badges/master/build.svg)](https://gitlab.w3.org/symfony-bundles/w3clifecycleeventsbundle/commits/master)
 lifecycle-events-bundle
 =======================
 
