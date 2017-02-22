@@ -39,7 +39,7 @@ class LifecycleEventsListener
     /**
      * Constructs a new instance
      *
-     * @param LifecycleEventsDispatcher $dispatcher the dispatcher to fed
+     * @param LifecycleEventsDispatcher $dispatcher the dispatcher to feed
      * @param Reader $reader
      */
     public function __construct(LifecycleEventsDispatcher $dispatcher, Reader $reader)
