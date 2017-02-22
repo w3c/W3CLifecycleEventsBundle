@@ -1,6 +1,10 @@
 before_script:
     - composer update
 
-test:
+stages:
+    - test
+
+phpunit:
+    stage: test
     script:
-        - ./vendor/bin/phpunit Tests
+        - ./vendor/bin/phpunit -c phpunit.xml --coverage-text --colors=never
