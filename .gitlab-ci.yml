@@ -7,4 +7,4 @@ stages:
 phpunit:
     stage: test
     script:
-        - php -d extension=xdebug.so ./vendor/bin/phpunit -c phpunit.xml --coverage-text --colors=never
+        - php -d zend_extension=xdebug.so ./vendor/bin/phpunit -c phpunit.xml --coverage-text --colors=never
