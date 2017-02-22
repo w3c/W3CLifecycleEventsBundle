@@ -51,7 +51,7 @@ class LifecycleUpdateEventTest extends TestCase
         $this->assertFalse($this->event->hasChangedField('family'));
 
         $this->assertSame($this->collectionChanges, $this->event->getCollectionsChangeSet());
-        $this->assertSame($this->inserted, $this->event->getAddedElements('friends'));
+        $this->assertSame($this->inserted, $this->event->getInsertedElements('friends'));
         $this->assertSame($this->deleted, $this->event->getDeletedElements('friends'));
         $this->assertTrue($this->event->hasChangedField('friends'));
         $this->assertFalse($this->event->hasChangedField('tags'));

@@ -104,7 +104,7 @@ class LifecycleUpdateEvent extends LifecycleEvent
         return $this->collectionsChangeSet[$field]['deleted'];
     }
 
-    public function getAddedElements($field)
+    public function getInsertedElements($field)
     {
         $this->assertValidCollection($field);
 
