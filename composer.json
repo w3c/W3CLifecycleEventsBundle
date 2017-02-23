@@ -25,6 +25,5 @@
         "psr-4": {
             "W3C\\LifecycleEventsBundle\\": ""
         }
-    },
-    "target-dir": "W3C/LifecycleEventsBundle"
+    }
 }
