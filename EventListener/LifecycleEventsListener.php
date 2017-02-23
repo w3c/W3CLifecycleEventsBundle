@@ -56,12 +56,13 @@ class LifecycleEventsListener
     public function postPersist(LifecycleEventArgs $args)
     {
         $class      = ClassUtils::getRealClass(get_class($args->getEntity()));
+        /** @var Create $annotation */
         $annotation = $this->reader->getClassAnnotation(
             new \ReflectionClass($class),
             Create::class
         );
         if ($annotation) {
-            $this->dispatcher->addCreation([$annotation, $args]);
+            $this->dispatcher->addCreation($annotation, $args);
         }
     }
 
@@ -73,12 +74,13 @@ class LifecycleEventsListener
     public function postRemove(LifecycleEventArgs $args)
     {
         $class      = ClassUtils::getRealClass(get_class($args->getEntity()));
+        /** @var Delete $annotation */
         $annotation = $this->reader->getClassAnnotation(
             new \ReflectionClass($class),
             Delete::class
         );
         if ($annotation) {
-            $this->dispatcher->addDeletion([$annotation, $args]);
+            $this->dispatcher->addDeletion($annotation, $args);
         }
     }
 
@@ -98,12 +100,12 @@ class LifecycleEventsListener
             Update::class
         );
         if ($annotation) {
-            $this->dispatcher->addUpdate([
+            $this->dispatcher->addUpdate(
                 $annotation,
                 $entity,
                 $this->buildChangeSet($args, $entity),
                 $annotation->monitor_collections ? $this->buildCollectionChanges($args, $entity) : null
-            ]);
+            );
         }
     }
 

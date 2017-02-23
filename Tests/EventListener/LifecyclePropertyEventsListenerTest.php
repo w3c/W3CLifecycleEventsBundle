@@ -105,7 +105,7 @@ class LifecyclePropertyEventsListenerTest extends \PHPUnit_Framework_TestCase
         
         $this->dispatcher->expects($this->once())
             ->method('addPropertyChange')
-            ->with([$annotation, $user, 'name', 'foo', 'bar']);
+            ->with($annotation, $user, 'name', 'foo', 'bar');
 
         $this->listener->preUpdate($event);
     }
@@ -133,7 +133,7 @@ class LifecyclePropertyEventsListenerTest extends \PHPUnit_Framework_TestCase
 
         $this->dispatcher->expects($this->once())
             ->method('addCollectionChange')
-            ->with([$annotation, $user, 'friends', $deleted, $inserted]);
+            ->with($annotation, $user, 'friends', $deleted, $inserted);
 
         $this->listener->preUpdate($event);
     }
@@ -144,12 +144,6 @@ class LifecyclePropertyEventsListenerTest extends \PHPUnit_Framework_TestCase
         $user2      = new UserNoAnnotation();
         $changeSet = [];
         $event     = new PreUpdateEventArgs($user, $this->manager, $changeSet);
-
-        /** @var Update $annotation */
-        $annotation = $this->reader->getPropertyAnnotation(
-            new \ReflectionProperty(get_class($user), 'name'),
-            Change::class
-        );
 
         $this->manager->method('getUnitOfWork')->willReturn($this->uow);
         $this->uow->method('getScheduledCollectionUpdates')->willReturn([$this->uow]);

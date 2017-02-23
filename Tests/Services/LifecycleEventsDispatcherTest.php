@@ -78,7 +78,7 @@ class LifecycleEventsDispatcherTest extends TestCase
         $user = new User();
         $annotation = new Create();
         $args = new LifecycleEventArgs($user, $this->objectManager);
-        $this->dispatcher->addCreation([$annotation, $args]);
+        $this->dispatcher->addCreation($annotation, $args);
 
         $this->assertCount(1, $this->dispatcher->getCreations());
 
@@ -98,7 +98,7 @@ class LifecycleEventsDispatcherTest extends TestCase
         $annotation->event = 'test';
         $annotation->class = MyLifecycleEvent::class;
         $args       = new LifecycleEventArgs($user, $this->objectManager);
-        $this->dispatcher->addCreation([$annotation, $args]);
+        $this->dispatcher->addCreation($annotation, $args);
 
         $this->assertCount(1, $this->dispatcher->getCreations());
 
@@ -115,7 +115,7 @@ class LifecycleEventsDispatcherTest extends TestCase
         $user       = new User();
         $annotation = new Delete();
         $args       = new LifecycleEventArgs($user, $this->objectManager);
-        $this->dispatcher->addDeletion([$annotation, $args]);
+        $this->dispatcher->addDeletion($annotation, $args);
 
         $this->assertCount(1, $this->dispatcher->getDeletions());
 
@@ -135,7 +135,7 @@ class LifecycleEventsDispatcherTest extends TestCase
         $annotation->class = MyLifecycleEvent::class;
 
         $args       = new LifecycleEventArgs($user, $this->objectManager);
-        $this->dispatcher->addDeletion([$annotation, $args]);
+        $this->dispatcher->addDeletion($annotation, $args);
 
         $this->assertCount(1, $this->dispatcher->getDeletions());
 
@@ -151,12 +151,12 @@ class LifecycleEventsDispatcherTest extends TestCase
     {
         $user       = new User();
         $annotation = new Update();
-        $this->dispatcher->addUpdate([
+        $this->dispatcher->addUpdate(
             $annotation,
             $user,
             ['name' => ['foo', 'bar']],
             null
-        ]);
+        );
 
         $this->assertCount(1, $this->dispatcher->getUpdates());
 
@@ -175,12 +175,12 @@ class LifecycleEventsDispatcherTest extends TestCase
         $annotation->event = 'test';
         $annotation->class = MyUpdatedEvent::class;
 
-        $this->dispatcher->addUpdate([
+        $this->dispatcher->addUpdate(
             $annotation,
             $user,
             ['name' => ['foo', 'bar']],
             null
-        ]);
+        );
 
         $this->assertCount(1, $this->dispatcher->getUpdates());
 
@@ -196,13 +196,13 @@ class LifecycleEventsDispatcherTest extends TestCase
     {
         $user       = new User();
         $annotation = new Change();
-        $this->dispatcher->addPropertyChange([
+        $this->dispatcher->addPropertyChange(
             $annotation,
             $user,
             'name',
             'foo',
             'bar'
-        ]);
+        );
 
         $this->assertCount(1, $this->dispatcher->getPropertyChanges());
 
@@ -221,13 +221,13 @@ class LifecycleEventsDispatcherTest extends TestCase
         $annotation->event = 'test';
         $annotation->class = MyPropertyChangedEvent::class;
 
-        $this->dispatcher->addPropertyChange([
+        $this->dispatcher->addPropertyChange(
             $annotation,
             $user,
             'name',
             'foo',
             'bar'
-        ]);
+        );
 
         $this->assertCount(1, $this->dispatcher->getPropertyChanges());
 
@@ -244,13 +244,13 @@ class LifecycleEventsDispatcherTest extends TestCase
         $annotation = new Change();
         $deleted = [new User()];
         $inserted = [new User(), new User()];
-        $this->dispatcher->addCollectionChange([
+        $this->dispatcher->addCollectionChange(
             $annotation,
             $user,
             'friends',
             $deleted,
             $inserted
-        ]);
+        );
 
         $this->assertCount(1, $this->dispatcher->getCollectionChanges());
 
@@ -271,13 +271,13 @@ class LifecycleEventsDispatcherTest extends TestCase
 
         $deleted    = [new User()];
         $inserted   = [new User(), new User()];
-        $this->dispatcher->addCollectionChange([
+        $this->dispatcher->addCollectionChange(
             $annotation,
             $user,
             'friends',
             $deleted,
             $inserted
-        ]);
+        );
 
         $this->assertCount(1, $this->dispatcher->getCollectionChanges());
 

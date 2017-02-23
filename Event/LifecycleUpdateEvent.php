@@ -38,23 +38,24 @@ class LifecycleUpdateEvent extends LifecycleEvent
         $this->collectionsChangeSet = $collectionsChangeSet;
     }
 
-    /**
-     * Retrieves the entity's properties changeset.
-     *
-     * @return array
-     */
-    public function getPropertiesChangeSet()
+    public function getChangedProperties()
     {
-        return $this->propertiesChangeSet;
+        return array_keys($this->propertiesChangeSet);
     }
 
-    /**
-     * Retrieve the entity's collections changeset
-     * @return array
-     */
-    public function getCollectionsChangeSet()
+    public function havePropertiesChanged()
     {
-        return $this->collectionsChangeSet;
+        return $this->propertiesChangeSet && count($this->propertiesChangeSet) > 0;
+    }
+
+    public function getChangedCollections()
+    {
+        return array_keys($this->collectionsChangeSet);
+    }
+
+    public function haveCollectionsChanged()
+    {
+        return $this->collectionsChangeSet && count($this->collectionsChangeSet) > 0;
     }
 
     /**

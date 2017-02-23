@@ -44,13 +44,16 @@ class LifecycleUpdateEventTest extends TestCase
 
     public function testAccessors()
     {
-        $this->assertEquals($this->propertyChanges, $this->event->getPropertiesChangeSet());
+        $this->assertTrue($this->event->havePropertiesChanged());
+        $this->assertTrue($this->event->haveCollectionsChanged());
+
+        $this->assertEquals(['name'], $this->event->getChangedProperties());
         $this->assertEquals('bar', $this->event->getNewValue('name'));
         $this->assertEquals('foo', $this->event->getOldValue('name'));
         $this->assertTrue($this->event->hasChangedField('name'));
         $this->assertFalse($this->event->hasChangedField('family'));
 
-        $this->assertSame($this->collectionChanges, $this->event->getCollectionsChangeSet());
+        $this->assertEquals(['friends'], $this->event->getChangedCollections());
         $this->assertSame($this->inserted, $this->event->getInsertedElements('friends'));
         $this->assertSame($this->deleted, $this->event->getDeletedElements('friends'));
         $this->assertTrue($this->event->hasChangedField('friends'));

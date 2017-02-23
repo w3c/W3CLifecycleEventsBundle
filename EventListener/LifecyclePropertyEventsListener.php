@@ -59,19 +59,20 @@ class LifecyclePropertyEventsListener
         $realClass = ClassUtils::getRealClass(get_class($entity));
 
         foreach ($args->getEntityChangeSet() as $property => $change) {
+            /** @var Change $annotation */
             $annotation = $this->reader->getPropertyAnnotation(
                 new \ReflectionProperty($realClass, $property),
                 Change::class
             );
 
             if ($annotation) {
-                $this->dispatcher->addPropertyChange([
+                $this->dispatcher->addPropertyChange(
                     $annotation,
                     $args->getEntity(),
                     $property,
                     $change[0],
                     $change[1]
-                ]);
+                );
             }
         }
     }
@@ -87,6 +88,7 @@ class LifecyclePropertyEventsListener
         /** @var PersistentCollection $update */
         foreach ($args->getEntityManager()->getUnitOfWork()->getScheduledCollectionUpdates() as $update) {
             $property   = $update->getMapping()['fieldName'];
+            /** @var Change $annotation */
             $annotation = $this->reader->getPropertyAnnotation(
                 new \ReflectionProperty($realClass, $property),
                 Change::class
@@ -97,13 +99,13 @@ class LifecyclePropertyEventsListener
                 continue;
             }
 
-            $this->dispatcher->addCollectionChange([
+            $this->dispatcher->addCollectionChange(
                 $annotation,
                 $args->getEntity(),
                 $property,
                 $update->getDeleteDiff(),
                 $update->getInsertDiff()
-            ]);
+            );
         }
     }
 }
