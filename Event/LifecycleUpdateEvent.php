@@ -24,11 +24,9 @@ class LifecycleUpdateEvent extends LifecycleEvent
     private $collectionsChangeSet;
 
     /**
-     * Constructor.
-     *
-     * @param object $entity
-     * @param array $propertiesChangeSet
-     * @param array $collectionsChangeSet
+     * @param object $entity the entity being modified
+     * @param array $propertiesChangeSet list of changes to properties
+     * @param array $collectionsChangeSet list of changes to collections
      */
     public function __construct($entity, array $propertiesChangeSet = null, array $collectionsChangeSet = null)
     {
