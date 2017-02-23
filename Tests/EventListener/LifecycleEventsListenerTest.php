@@ -137,7 +137,7 @@ class LifecycleEventsListenerTest extends \PHPUnit_Framework_TestCase
 
         $this->dispatcher->expects($this->once())
             ->method('addUpdate')
-            ->with($annotation, $user, $changeSet, null);
+            ->with($annotation, $user, ['name' => ['old' => null, 'new' => 'foo']], null);
 
         $this->listener->preUpdate($event);
     }

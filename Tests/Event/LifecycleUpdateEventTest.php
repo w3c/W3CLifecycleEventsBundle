@@ -35,7 +35,7 @@ class LifecycleUpdateEventTest extends TestCase
     public function setUp()
     {
         $entity                  = new User();
-        $this->propertyChanges   = ['name' => ['foo', 'bar']];
+        $this->propertyChanges   = ['name' => ['old' => 'foo', 'new' => 'bar']];
         $this->deleted           = [new User()];
         $this->inserted          = [new User()];
         $this->collectionChanges = ['friends' => ['deleted' => $this->deleted, 'inserted' => $this->inserted]];

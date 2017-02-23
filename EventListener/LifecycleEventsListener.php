@@ -154,14 +154,14 @@ class LifecycleEventsListener
     private function buildChangeSet(PreUpdateEventArgs $args, $entity)
     {
         $changes = [];
-        foreach ($args->getEntityChangeSet() as $property => $change) {
+        foreach (array_keys($args->getEntityChangeSet()) as $property) {
             $ignoreAnnotation = $this->reader->getPropertyAnnotation(
                 new \ReflectionProperty(ClassUtils::getRealClass(get_class($entity)), $property),
                 IgnoreClassUpdates::class
             );
 
             if (!$ignoreAnnotation) {
-                $changes[$property] = $change;
+                $changes[$property] = ['old' => $args->getOldValue($property), 'new' => $args->getNewValue($property)];
             }
         }
         return $changes;

@@ -99,7 +99,7 @@ class LifecycleUpdateEvent extends LifecycleEvent
     {
         $this->assertValidProperty($field);
 
-        return $this->propertiesChangeSet[$field][0];
+        return $this->propertiesChangeSet[$field]['old'];
     }
 
     /**
@@ -113,7 +113,7 @@ class LifecycleUpdateEvent extends LifecycleEvent
     {
         $this->assertValidProperty($field);
 
-        return $this->propertiesChangeSet[$field][1];
+        return $this->propertiesChangeSet[$field]['new'];
     }
 
     /**
