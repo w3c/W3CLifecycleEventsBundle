@@ -38,28 +38,48 @@ class LifecycleUpdateEvent extends LifecycleEvent
         $this->collectionsChangeSet = $collectionsChangeSet;
     }
 
+    /**
+     * Return the list of properties that have changed
+     *
+     * @return array
+     */
     public function getChangedProperties()
     {
         return array_keys($this->propertiesChangeSet);
     }
 
+    /**
+     * Return whether some properties have changed
+     *
+     * @return bool
+     */
     public function havePropertiesChanged()
     {
         return $this->propertiesChangeSet && count($this->propertiesChangeSet) > 0;
     }
 
+    /**
+     * Return the list of collections that have changed
+     *
+     * @return array
+     */
     public function getChangedCollections()
     {
         return array_keys($this->collectionsChangeSet);
     }
 
+    /**
+     * Return whether some collections have changed
+     *
+     * @return bool
+     */
     public function haveCollectionsChanged()
     {
         return $this->collectionsChangeSet && count($this->collectionsChangeSet) > 0;
     }
 
     /**
-     * Checks if field has a changeset.
+     * Check if field has a changeset.
      *
      * @param string $field
      *
@@ -71,7 +91,7 @@ class LifecycleUpdateEvent extends LifecycleEvent
     }
 
     /**
-     * Gets the old value of the changeset of the changed field.
+     * Get the old value of the changeset of the changed field.
      *
      * @param string $field
      *
@@ -85,7 +105,7 @@ class LifecycleUpdateEvent extends LifecycleEvent
     }
 
     /**
-     * Gets the new value of the changeset of the changed field.
+     * Get the new value of the changeset of the changed field.
      *
      * @param string $field
      *
@@ -98,6 +118,13 @@ class LifecycleUpdateEvent extends LifecycleEvent
         return $this->propertiesChangeSet[$field][1];
     }
 
+    /**
+     * Get the list of elements deleted from the collection $field
+     *
+     * @param string $field
+     *
+     * @return array
+     */
     public function getDeletedElements($field)
     {
         $this->assertValidCollection($field);
@@ -105,6 +132,13 @@ class LifecycleUpdateEvent extends LifecycleEvent
         return $this->collectionsChangeSet[$field]['deleted'];
     }
 
+    /**
+     * Get the list of elements inserted to the collection $field
+     *
+     * @param string $field
+     *
+     * @return array
+     */
     public function getInsertedElements($field)
     {
         $this->assertValidCollection($field);
@@ -113,7 +147,7 @@ class LifecycleUpdateEvent extends LifecycleEvent
     }
 
     /**
-     * Asserts the field exists in changeset.
+     * Assert if the field exists in changeset.
      *
      * @param string $field
      *
@@ -133,7 +167,7 @@ class LifecycleUpdateEvent extends LifecycleEvent
     }
 
     /**
-     * Asserts the field exists in changeset.
+     * Assert if the field exists in changeset.
      *
      * @param string $field
      *
