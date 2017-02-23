@@ -84,6 +84,11 @@ class LifecycleEventsListener
         }
     }
 
+    public function postSoftDelete(LifecycleEventArgs $args)
+    {
+        $this->postRemove($args);
+    }
+
     /**
      * Called upon receiving preUpdate events
      *

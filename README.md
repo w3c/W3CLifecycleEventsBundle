@@ -81,7 +81,7 @@ public function __construct($entity)
 
 #### `@On\Delete`
 
-Monitors the deletion of entities. It accepts the following parameters:
+Monitors the deletion (or soft deletion, if you use Doctrine Extensions) of entities. It accepts the following parameters:
 - `event`: the event being sent every time an entity is deleted (`w3c.lifecycle.deleted` by default)
 - `class`: the class of this event (`W3C\LifecycleEventsBundle\Event\LifecycleEvent` by default). This class
 must have a constructor with the following signature:
