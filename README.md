@@ -230,26 +230,3 @@ $dispatcher->setAutoDispatch(false);
 [...]
 $dispatcher->dispatchEvents(); // manually dispatch all events
 ```
-
-Manipulating events before they are sent
-----------------------------------------
-
-Although not recommended, it is possible to add, remove of modify some of the events that are going to be fired.
-
-### On-demand
-
-You have to disable automatic dispatch first and can then use the dispatcher getters and setters:
-
-When done, you can dispatch all the events by calling
- ``` php
- <?php
- $dispatcher->dispatchEvents()
- ```
-
-### Automatically
-
-If you need to always make the same changes to the events, you can register a new event listener listening to
-```w3c.lifecycle.preAutoDispatch```. This event is fired right before dispatching all the events and only when
-```auto_dispatch``` is set to true.
-This event has one method getDispatcher() that returns the same dispatcher as in the previous section, thus allowing
-to retrieve creation, deletion and update events, and manipulate them.
