@@ -57,10 +57,7 @@ class LifecycleEventsListener
     {
         $class      = ClassUtils::getRealClass(get_class($args->getEntity()));
         /** @var Create $annotation */
-        $annotation = $this->reader->getClassAnnotation(
-            new \ReflectionClass($class),
-            Create::class
-        );
+        $annotation = $this->getAnnotation($class, Create::class);
         if ($annotation) {
             $this->dispatcher->addCreation($annotation, $args);
         }
@@ -75,10 +72,7 @@ class LifecycleEventsListener
     {
         $class      = ClassUtils::getRealClass(get_class($args->getEntity()));
         /** @var Delete $annotation */
-        $annotation = $this->reader->getClassAnnotation(
-            new \ReflectionClass($class),
-            Delete::class
-        );
+        $annotation = $this->getAnnotation($class, Delete::class);
         if ($annotation) {
             $this->dispatcher->addDeletion($annotation, $args);
         }
@@ -100,10 +94,7 @@ class LifecycleEventsListener
         $class  = ClassUtils::getRealClass(get_class($entity));
 
         /** @var Update $annotation */
-        $annotation = $this->reader->getClassAnnotation(
-            new \ReflectionClass($class),
-            Update::class
-        );
+        $annotation = $this->getAnnotation($class, Update::class);
         if ($annotation) {
             $this->dispatcher->addUpdate(
                 $annotation,
@@ -124,19 +115,19 @@ class LifecycleEventsListener
      */
     private function buildCollectionChanges(PreUpdateEventArgs $args, $entity)
     {
+        $realClass = ClassUtils::getRealClass(get_class($entity));
         $collectionsChanges = null;
+
         /** @var PersistentCollection $u */
         foreach ($args->getEntityManager()->getUnitOfWork()->getScheduledCollectionUpdates() as $u) {
-            // Make sure $u belongs to the entity we are working on
+            $property = $u->getMapping()['fieldName'];
+
+            // Make sure $u and the field belong to the entity we are working on
             if ($u->getOwner() !== $entity) {
                 continue;
             }
 
-            $property         = $u->getMapping()['fieldName'];
-            $ignoreAnnotation = $this->reader->getPropertyAnnotation(
-                new \ReflectionProperty(ClassUtils::getRealClass(get_class($entity)), $property),
-                IgnoreClassUpdates::class
-            );
+            $ignoreAnnotation = $this->getIgnoreAnnotation($realClass, $property);
 
             if (!$ignoreAnnotation) {
                 $collectionsChanges[$property] = [
@@ -160,16 +151,53 @@ class LifecycleEventsListener
     {
         $changes = [];
         foreach (array_keys($args->getEntityChangeSet()) as $property) {
-            $ignoreAnnotation = $this->reader->getPropertyAnnotation(
-                new \ReflectionProperty(ClassUtils::getRealClass(get_class($entity)), $property),
-                IgnoreClassUpdates::class
-            );
+            $ignoreAnnotation = $this->getIgnoreAnnotation(ClassUtils::getRealClass(get_class($entity)), $property);
 
             if (!$ignoreAnnotation) {
                 $changes[$property] = ['old' => $args->getOldValue($property), 'new' => $args->getNewValue($property)];
             }
         }
         return $changes;
+    }
+
+    /**
+     * @param $realClass
+     * @param $property
+     *
+     * @return IgnoreClassUpdates
+     * @throws \ReflectionException
+     */
+    private function getIgnoreAnnotation($realClass, $property)
+    {
+        try {
+            /** @var IgnoreClassUpdates $ignoreAnnotation */
+            $ignoreAnnotation = $this->reader->getPropertyAnnotation(
+                new \ReflectionProperty($realClass, $property),
+                IgnoreClassUpdates::class
+            );
+            return $ignoreAnnotation;
+        } catch (\ReflectionException $e) {
+            throw new \ReflectionException(
+                $e->getMessage() . '. Could this be a private field of a parent class?',
+                $e->getCode(),
+                $e
+            );
+        }
+    }
+
+    /**
+     * @param string $class
+     * @param string $annotationClass
+     *
+     * @return object
+     */
+    private function getAnnotation($class, $annotationClass)
+    {
+        $annotation = $this->reader->getClassAnnotation(
+            new \ReflectionClass($class),
+            $annotationClass
+        );
+        return $annotation;
     }
 }
 

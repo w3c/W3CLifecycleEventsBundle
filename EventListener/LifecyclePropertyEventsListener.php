@@ -59,11 +59,7 @@ class LifecyclePropertyEventsListener
         $realClass = ClassUtils::getRealClass(get_class($entity));
 
         foreach ($args->getEntityChangeSet() as $property => $change) {
-            /** @var Change $annotation */
-            $annotation = $this->reader->getPropertyAnnotation(
-                new \ReflectionProperty($realClass, $property),
-                Change::class
-            );
+            $annotation = $this->getChangeAnnotation($realClass, $property);
 
             if ($annotation) {
                 $this->dispatcher->addPropertyChange(
@@ -79,6 +75,8 @@ class LifecyclePropertyEventsListener
 
     /**
      * @param PreUpdateEventArgs $args
+     *
+     * @throws \ReflectionException
      */
     private function addCollectionChanges(PreUpdateEventArgs $args)
     {
@@ -87,15 +85,15 @@ class LifecyclePropertyEventsListener
 
         /** @var PersistentCollection $update */
         foreach ($args->getEntityManager()->getUnitOfWork()->getScheduledCollectionUpdates() as $update) {
+            if ($update->getOwner() !== $entity) {
+                continue;
+            }
+
             $property   = $update->getMapping()['fieldName'];
-            /** @var Change $annotation */
-            $annotation = $this->reader->getPropertyAnnotation(
-                new \ReflectionProperty($realClass, $property),
-                Change::class
-            );
+            $annotation = $this->getChangeAnnotation($realClass, $property);
 
             // Make sure $u belongs to the entity we are working on
-            if (!$annotation || $update->getOwner() !== $entity) {
+            if (!isset($annotation)) {
                 continue;
             }
 
@@ -105,6 +103,31 @@ class LifecyclePropertyEventsListener
                 $property,
                 $update->getDeleteDiff(),
                 $update->getInsertDiff()
+            );
+        }
+    }
+
+    /**
+     * @param $realClass
+     * @param $property
+     *
+     * @return Change
+     * @throws \ReflectionException
+     */
+    private function getChangeAnnotation($realClass, $property)
+    {
+        try {
+            /** @var Change $annotation */
+            $annotation = $this->reader->getPropertyAnnotation(
+                new \ReflectionProperty($realClass, $property),
+                Change::class
+            );
+            return $annotation;
+        } catch (\ReflectionException $e) {
+            throw new \ReflectionException(
+                $e->getMessage() . '. Could this be a private field of a parent class?',
+                $e->getCode(),
+                $e
             );
         }
     }

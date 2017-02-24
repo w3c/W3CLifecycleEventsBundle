@@ -30,6 +30,7 @@ use W3C\LifecycleEventsBundle\EventListener\LifecycleEventsListener;
 use W3C\LifecycleEventsBundle\EventListener\LifecyclePropertyEventsListener;
 use W3C\LifecycleEventsBundle\Services\LifecycleEventsDispatcher;
 use W3C\LifecycleEventsBundle\Tests\Annotation\Fixtures\User;
+use W3C\LifecycleEventsBundle\Tests\EventListener\Fixtures\OtherEntity;
 use W3C\LifecycleEventsBundle\Tests\EventListener\Fixtures\UserChange;
 use W3C\LifecycleEventsBundle\Tests\EventListener\Fixtures\UserNoAnnotation;
 
@@ -138,6 +139,29 @@ class LifecyclePropertyEventsListenerTest extends \PHPUnit_Framework_TestCase
         $this->listener->preUpdate($event);
     }
 
+    public function testPreUpdateCollectionFieldDoesNotExist()
+    {
+        $this->expectException(\ReflectionException::class);
+
+        $user      = new UserChange();
+        $changeSet = [];
+        $event     = new PreUpdateEventArgs($user, $this->manager, $changeSet);
+
+        $this->manager->method('getUnitOfWork')->willReturn($this->uow);
+        $this->uow->method('getScheduledCollectionUpdates')->willReturn([$this->uow]);
+        $this->uow->method('getOwner')->willReturn($user);
+        $this->uow->method('getMapping')->willReturn(['fieldName' => 'foo']);
+        $deleted = [new User(), new User()];
+        $this->uow->method('getDeleteDiff')->willReturn($deleted);
+        $inserted = [new User()];
+        $this->uow->method('getInsertDiff')->willReturn($inserted);
+
+        $this->dispatcher->expects($this->never())
+            ->method('addCollectionChange');
+
+        $this->listener->preUpdate($event);
+    }
+
     public function testPreUpdateCollectionOtherEntity()
     {
         $user      = new UserChange();
@@ -149,6 +173,28 @@ class LifecyclePropertyEventsListenerTest extends \PHPUnit_Framework_TestCase
         $this->uow->method('getScheduledCollectionUpdates')->willReturn([$this->uow]);
         $this->uow->method('getOwner')->willReturn($user2);
         $this->uow->method('getMapping')->willReturn(['fieldName' => 'friends']);
+        $deleted = [new User(), new User()];
+        $this->uow->method('getDeleteDiff')->willReturn($deleted);
+        $inserted = [new User()];
+        $this->uow->method('getInsertDiff')->willReturn($inserted);
+
+        $this->dispatcher->expects($this->never())
+            ->method('addCollectionChange');
+
+        $this->listener->preUpdate($event);
+    }
+
+    public function testPreUpdateCollectionOtherClass()
+    {
+        $user      = new UserChange();
+        $user2     = new OtherEntity();
+        $changeSet = [];
+        $event     = new PreUpdateEventArgs($user, $this->manager, $changeSet);
+
+        $this->manager->method('getUnitOfWork')->willReturn($this->uow);
+        $this->uow->method('getScheduledCollectionUpdates')->willReturn([$this->uow]);
+        $this->uow->method('getOwner')->willReturn($user2);
+        $this->uow->method('getMapping')->willReturn(['fieldName' => 'foo']);
         $deleted = [new User(), new User()];
         $this->uow->method('getDeleteDiff')->willReturn($deleted);
         $inserted = [new User()];

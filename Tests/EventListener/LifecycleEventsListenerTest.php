@@ -263,4 +263,40 @@ class LifecycleEventsListenerTest extends \PHPUnit_Framework_TestCase
 
         $this->listener->preUpdate($event);
     }
+
+    public function testPreUpdateCollectionDoesNotExist()
+    {
+        $this->expectException(\ReflectionException::class);
+
+        $user      = new UserClassUpdateCollection();
+        $changeSet = [];
+        $event     = new PreUpdateEventArgs($user, $this->manager, $changeSet);
+
+        /** @var Update $annotation */
+        $annotation = $this->reader->getClassAnnotation(
+            new \ReflectionClass($user),
+            Update::class
+        );
+
+        $uow = $this
+            ->getMockBuilder(UnitOfWork::class)
+            ->disableOriginalConstructor()
+            ->setMethods(['getScheduledCollectionUpdates', 'getOwner', 'getMapping', 'getDeleteDiff', 'getInsertDiff'])
+            ->getMock();
+
+        $this->manager->method('getUnitOfWork')->willReturn($uow);
+        $uow->method('getScheduledCollectionUpdates')->willReturn([$uow]);
+        $uow->method('getOwner')->willReturn($user);
+        $uow->method('getMapping')->willReturn(['fieldName' => 'foo']);
+        $deleted = [new User(), new User()];
+        $uow->method('getDeleteDiff')->willReturn($deleted);
+        $inserted = [new User()];
+        $uow->method('getInsertDiff')->willReturn($inserted);
+
+        $this->dispatcher->expects($this->never())
+            ->method('addUpdate')
+            ->with($annotation, $user, [], null);
+
+        $this->listener->preUpdate($event);
+    }
 }
