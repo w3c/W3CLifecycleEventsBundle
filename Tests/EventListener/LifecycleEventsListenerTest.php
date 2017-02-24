@@ -112,7 +112,7 @@ class LifecycleEventsListenerTest extends \PHPUnit_Framework_TestCase
         $this->listener->postRemove($event);
     }
 
-    public function testPostRemoveNoCreationAnnotation()
+    public function testPostRemoveNoAnnotation()
     {
         $user  = new UserNoAnnotation();
         $event = new LifecycleEventArgs($user, $this->manager);
@@ -121,6 +121,28 @@ class LifecycleEventsListenerTest extends \PHPUnit_Framework_TestCase
             ->method('addDeletion');
 
         $this->listener->postRemove($event);
+    }
+
+    public function testPostSoftDelete()
+    {
+        $user  = new User();
+        $event = new LifecycleEventArgs($user, $this->manager);
+
+        $this->dispatcher->expects($this->once())
+            ->method('addDeletion');
+
+        $this->listener->postSoftDelete($event);
+    }
+
+    public function testPostSoftDeleteNoAnnotation()
+    {
+        $user  = new UserNoAnnotation();
+        $event = new LifecycleEventArgs($user, $this->manager);
+
+        $this->dispatcher->expects($this->never())
+            ->method('addDeletion');
+
+        $this->listener->postSoftDelete($event);
     }
 
     public function testPreUpdateNoCollection()
