@@ -227,6 +227,22 @@ w3_c_lifecycle_events:
 <?php
 $dispatcher = $this->container->get("w3c_lifecycle_events.dispatcher");
 $dispatcher->setAutoDispatch(false);
-[...]
+```
+
+Events can then be dispatched manually using the following:
+``` php
+<?php
 $dispatcher->dispatchEvents(); // manually dispatch all events
 ```
+
+Special case: inheritance
+-------------------------
+
+If you use inheritance in your entities, make sure to set fields of the parent class(es) protected (or public) so that
+changes to those can be monitored as belonging to sublasses.
+
+Failing to do so may lead to `\ReflectionException` exceptions such as:
+```
+Property W3CGroup::$updated does not exist. Could this be a private field of a parent class?
+```
+Even if those fields are not monitored!
