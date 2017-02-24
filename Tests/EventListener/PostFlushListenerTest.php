@@ -19,10 +19,11 @@ namespace W3C\LifecycleEventsBundle\Tests\EventListener;
 
 
 use Doctrine\ORM\Event\PostFlushEventArgs;
+use PHPUnit\Framework\TestCase;
 use W3C\LifecycleEventsBundle\EventListener\PostFlushListener;
 use W3C\LifecycleEventsBundle\Services\LifecycleEventsDispatcher;
 
-class PostFlushListenerTest extends \PHPUnit_Framework_TestCase
+class PostFlushListenerTest extends TestCase
 {
     /**
      * @var LifecycleEventsDispatcher|\PHPUnit_Framework_MockObject_MockObject
