@@ -1,4 +1,5 @@
 [![Build Status](https://travis-ci.org/w3c/W3CLifecycleEventsBundle.svg?branch=master)](https://travis-ci.org/w3c/W3CLifecycleEventsBundle)
+[![Coverage Status](https://coveralls.io/repos/github/w3c/W3CLifecycleEventsBundle/badge.svg?branch=master)](https://coveralls.io/github/w3c/W3CLifecycleEventsBundle?branch=master)
 [![SensioLabsInsight](https://insight.sensiolabs.com/projects/7634f8ca-5b9c-48bb-8443-2730c646c095/mini.png)](https://insight.sensiolabs.com/projects/7634f8ca-5b9c-48bb-8443-2730c646c095)
 
 lifecycle-events-bundle
