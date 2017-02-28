@@ -196,5 +196,3 @@ class LifecycleEventsListener
         return $annotation;
     }
 }
-
-?>
