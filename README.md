@@ -1,5 +1,4 @@
-[![build status](https://gitlab.w3.org/symfony-bundles/w3clifecycleeventsbundle/badges/master/build.svg)](https://gitlab.w3.org/symfony-bundles/w3clifecycleeventsbundle/commits/master)
-[![coverage report](https://gitlab.w3.org/symfony-bundles/w3clifecycleeventsbundle/badges/master/coverage.svg)](https://gitlab.w3.org/symfony-bundles/w3clifecycleeventsbundle/commits/master)
+[![Build Status](https://travis-ci.org/w3c/W3CLifecycleEventsBundle.svg?branch=master)](https://travis-ci.org/w3c/W3CLifecycleEventsBundle)
 
 lifecycle-events-bundle
 =======================
