@@ -1,7 +1,10 @@
+W3C Software and Document Notice and License
+============================================
+
 This work is being provided by the copyright holders under the following license.
 
 License
-=======
+-------
 
 By obtaining and/or copying this work, you (the licensee) agree that you have read, understood, and will comply with
 the following terms and conditions.
@@ -18,7 +21,7 @@ and Document Short Notice should be included.
 Copyright © 2017 W3C® (MIT, ERCIM, Keio, Beihang)." 
 
 Disclaimers
-===========
+-----------
 
 THIS WORK IS PROVIDED "AS IS," AND COPYRIGHT HOLDERS MAKE NO REPRESENTATIONS OR WARRANTIES, EXPRESS OR IMPLIED, 
 INCLUDING BUT NOT LIMITED TO, WARRANTIES OF MERCHANTABILITY OR FITNESS FOR ANY PARTICULAR PURPOSE OR THAT THE USE OF 
