@@ -1,11 +1,5 @@
 <?php
-/**
- * LifecycleEventsDispatcher.php
- *
- * @author Jean-Guilhem Rouel <jean-gui@w3.org>
- *
- * @copyright Copyright <C2><A9> 2013 W3C <C2><AE> (MIT, ERCIM, Keio) {@link http://www.w3.org/Consortium/Legal/2002/ipr-notice-20021231 Usage policies apply}.
- */
+
 namespace W3C\LifecycleEventsBundle\Services;
 
 use Doctrine\Common\Persistence\Event\LifecycleEventArgs;
@@ -23,6 +17,8 @@ use W3C\LifecycleEventsBundle\Event\PreAutoDispatchEvent;
 /**
  * LifecycleEventsDispatcher is meant to dispatch entity creation, deletion and updates
  * to listeners
+ *
+ * @author Jean-Guilhem Rouel <jean-gui@w3.org>
  */
 class LifecycleEventsDispatcher
 {

@@ -239,7 +239,7 @@ Special case: inheritance
 -------------------------
 
 If you use inheritance in your entities, make sure to set fields of the parent class(es) protected (or public) so that
-changes to those can be monitored as belonging to sublasses.
+changes to those can be monitored as belonging to subclasses.
 
 Failing to do so may lead to `\ReflectionException` exceptions such as:
 ```
