@@ -5,6 +5,7 @@ namespace W3C\LifecycleEventsBundle\EventListener;
 use Doctrine\Common\Annotations\Reader;
 use Doctrine\Common\Util\ClassUtils;
 use Doctrine\ORM\Event\PreUpdateEventArgs;
+use Doctrine\ORM\Mapping\ClassMetadata;
 use Doctrine\ORM\PersistentCollection;
 use W3C\LifecycleEventsBundle\Annotation\Change;
 use W3C\LifecycleEventsBundle\Services\LifecycleEventsDispatcher;
@@ -17,7 +18,7 @@ use W3C\LifecycleEventsBundle\Services\LifecycleEventsDispatcher;
 class LifecyclePropertyEventsListener
 {
     /**
-     * Events dispatcher
+     * Events dispatcher.
      *
      * @var LifecycleEventsDispatcher
      */
@@ -29,15 +30,15 @@ class LifecyclePropertyEventsListener
     private $reader;
 
     /**
-     * Constructs a new instance
+     * Constructs a new instance.
      *
      * @param LifecycleEventsDispatcher $dispatcher the dispatcher to fed
-     * @param Reader $reader
+     * @param Reader                    $reader
      */
     public function __construct(LifecycleEventsDispatcher $dispatcher, Reader $reader)
     {
         $this->dispatcher = $dispatcher;
-        $this->reader     = $reader;
+        $this->reader = $reader;
     }
 
     public function preUpdate(PreUpdateEventArgs $args)
@@ -53,9 +54,10 @@ class LifecyclePropertyEventsListener
     {
         $entity = $args->getEntity();
         $realClass = ClassUtils::getRealClass(get_class($entity));
+        $classMetadata = $args->getEntityManager()->getClassMetadata($realClass);
 
         foreach ($args->getEntityChangeSet() as $property => $change) {
-            $annotation = $this->getChangeAnnotation($realClass, $property);
+            $annotation = $this->getChangeAnnotation($classMetadata, $property);
 
             if ($annotation) {
                 $this->dispatcher->addPropertyChange(
@@ -78,6 +80,7 @@ class LifecyclePropertyEventsListener
     {
         $entity = $args->getEntity();
         $realClass = ClassUtils::getRealClass(get_class($entity));
+        $classMetadata = $args->getEntityManager()->getClassMetadata($realClass);
 
         /** @var PersistentCollection $update */
         foreach ($args->getEntityManager()->getUnitOfWork()->getScheduledCollectionUpdates() as $update) {
@@ -85,8 +88,8 @@ class LifecyclePropertyEventsListener
                 continue;
             }
 
-            $property   = $update->getMapping()['fieldName'];
-            $annotation = $this->getChangeAnnotation($realClass, $property);
+            $property = $update->getMapping()['fieldName'];
+            $annotation = $this->getChangeAnnotation($classMetadata, $property);
 
             // Make sure $u belongs to the entity we are working on
             if (!isset($annotation)) {
@@ -104,24 +107,26 @@ class LifecyclePropertyEventsListener
     }
 
     /**
-     * @param $realClass
-     * @param $property
+     * @param ClassMetadata $classMetadata
+     * @param string        $property
+     *
+     * @throws \ReflectionException
      *
      * @return Change
-     * @throws \ReflectionException
      */
-    private function getChangeAnnotation($realClass, $property)
+    private function getChangeAnnotation(ClassMetadata $classMetadata, $property)
     {
         try {
             /** @var Change $annotation */
             $annotation = $this->reader->getPropertyAnnotation(
-                new \ReflectionProperty($realClass, $property),
+                $classMetadata->getReflectionProperty($property),
                 Change::class
             );
+
             return $annotation;
         } catch (\ReflectionException $e) {
             throw new \ReflectionException(
-                $e->getMessage() . '. Could this be a private field of a parent class?',
+                $e->getMessage().'. Could this be a private field of a parent class?',
                 $e->getCode(),
                 $e
             );
