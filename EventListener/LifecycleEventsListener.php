@@ -6,6 +6,7 @@ use Doctrine\Common\Annotations\Reader;
 use Doctrine\Common\Util\ClassUtils;
 use Doctrine\ORM\Event\LifecycleEventArgs;
 use Doctrine\ORM\Event\PreUpdateEventArgs;
+use Doctrine\ORM\Mapping\ClassMetadata;
 use Doctrine\ORM\PersistentCollection;
 use W3C\LifecycleEventsBundle\Annotation\Create;
 use W3C\LifecycleEventsBundle\Annotation\Delete;
@@ -111,7 +112,8 @@ class LifecycleEventsListener
      */
     private function buildCollectionChanges(PreUpdateEventArgs $args, $entity)
     {
-        $realClass = ClassUtils::getRealClass(get_class($entity));
+        $realClass          = ClassUtils::getRealClass(get_class($entity));
+        $classMetadata      = $args->getEntityManager()->getClassMetadata($realClass);
         $collectionsChanges = null;
 
         /** @var PersistentCollection $u */
@@ -123,7 +125,7 @@ class LifecycleEventsListener
                 continue;
             }
 
-            $ignoreAnnotation = $this->getIgnoreAnnotation($realClass, $property);
+            $ignoreAnnotation = $this->getIgnoreAnnotation($classMetadata, $property);
 
             if (!$ignoreAnnotation) {
                 $collectionsChanges[$property] = [
@@ -145,9 +147,11 @@ class LifecycleEventsListener
      */
     private function buildChangeSet(PreUpdateEventArgs $args, $entity)
     {
-        $changes = [];
+        $realClass     = ClassUtils::getRealClass(get_class($entity));
+        $classMetadata = $args->getEntityManager()->getClassMetadata($realClass);
+        $changes       = [];
         foreach (array_keys($args->getEntityChangeSet()) as $property) {
-            $ignoreAnnotation = $this->getIgnoreAnnotation(ClassUtils::getRealClass(get_class($entity)), $property);
+            $ignoreAnnotation = $this->getIgnoreAnnotation($classMetadata, $property);
 
             if (!$ignoreAnnotation) {
                 $changes[$property] = ['old' => $args->getOldValue($property), 'new' => $args->getNewValue($property)];
@@ -157,28 +161,28 @@ class LifecycleEventsListener
     }
 
     /**
-     * @param $realClass
-     * @param $property
+     * @param ClassMetadata $classMetadata
+     * @param string $property
      *
      * @return IgnoreClassUpdates
      * @throws \ReflectionException
      */
-    private function getIgnoreAnnotation($realClass, $property)
+    private function getIgnoreAnnotation(ClassMetadata $classMetadata, $property)
     {
-        try {
+        $reflProperty = $classMetadata->getReflectionProperty($property);
+
+        if ($reflProperty) {
             /** @var IgnoreClassUpdates $ignoreAnnotation */
             $ignoreAnnotation = $this->reader->getPropertyAnnotation(
-                new \ReflectionProperty($realClass, $property),
+                $classMetadata->getReflectionProperty($property),
                 IgnoreClassUpdates::class
             );
             return $ignoreAnnotation;
-        } catch (\ReflectionException $e) {
-            throw new \ReflectionException(
-                $e->getMessage() . '. Could this be a private field of a parent class?',
-                $e->getCode(),
-                $e
-            );
         }
+
+        throw new \ReflectionException(
+            $classMetadata->getName() . '.' . $property . ' not found. Could this be a private field of a parent class?'
+        );
     }
 
     /**
