@@ -5,9 +5,11 @@ namespace W3C\LifecycleEventsBundle\Tests\EventListener;
 use Doctrine\Common\Annotations\AnnotationReader;
 use Doctrine\Common\Annotations\AnnotationRegistry;
 use Doctrine\Common\Annotations\Reader;
+use Doctrine\Common\Util\ClassUtils;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\Event\LifecycleEventArgs;
 use Doctrine\ORM\Event\PreUpdateEventArgs;
+use Doctrine\ORM\Mapping\ClassMetadata;
 use Doctrine\ORM\UnitOfWork;
 use PHPUnit_Framework_MockObject_MockObject as MockObject;
 use W3C\LifecycleEventsBundle\Annotation\Update;
@@ -45,6 +47,11 @@ class LifecycleEventsListenerTest extends \PHPUnit_Framework_TestCase
      */
     private $manager;
 
+    /**
+     * @var ClassMetadata|MockObject
+     */
+    private $classMetadata;
+
     public function setUp()
     {
         parent::setUp();
@@ -61,6 +68,11 @@ class LifecycleEventsListenerTest extends \PHPUnit_Framework_TestCase
 
         $this->manager = $this
             ->getMockBuilder(EntityManagerInterface::class)
+            ->disableOriginalConstructor()
+            ->getMock();
+
+        $this->classMetadata = $this
+            ->getMockBuilder(ClassMetadata::class)
             ->disableOriginalConstructor()
             ->getMock();
 
@@ -145,6 +157,16 @@ class LifecycleEventsListenerTest extends \PHPUnit_Framework_TestCase
             Update::class
         );
 
+        $this->manager
+            ->method('getClassMetadata')
+            ->with(ClassUtils::getRealClass(get_class($user)))
+            ->willReturn($this->classMetadata);
+
+        $this->classMetadata
+            ->method('getReflectionProperty')
+            ->with('name')
+            ->willReturn(new \ReflectionProperty($user, 'name'));
+
         $this->dispatcher->expects($this->once())
             ->method('addUpdate')
             ->with($annotation, $user, ['name' => ['old' => null, 'new' => 'foo']], null);
@@ -163,6 +185,16 @@ class LifecycleEventsListenerTest extends \PHPUnit_Framework_TestCase
             new \ReflectionClass($user),
             Update::class
         );
+
+        $this->manager
+            ->method('getClassMetadata')
+            ->with(ClassUtils::getRealClass(get_class($user)))
+            ->willReturn($this->classMetadata);
+
+        $this->classMetadata
+            ->method('getReflectionProperty')
+            ->with('name')
+            ->willReturn(new \ReflectionProperty($user, 'name'));
 
         $this->dispatcher->expects($this->once())
             ->method('addUpdate')
@@ -197,6 +229,16 @@ class LifecycleEventsListenerTest extends \PHPUnit_Framework_TestCase
         $uow->method('getDeleteDiff')->willReturn($deleted);
         $inserted = [new User()];
         $uow->method('getInsertDiff')->willReturn($inserted);
+
+        $this->manager
+            ->method('getClassMetadata')
+            ->with(ClassUtils::getRealClass(get_class($user)))
+            ->willReturn($this->classMetadata);
+
+        $this->classMetadata
+            ->method('getReflectionProperty')
+            ->with('friends')
+            ->willReturn(new \ReflectionProperty($user, 'friends'));
 
         $this->dispatcher->expects($this->once())
             ->method('addUpdate')
@@ -235,6 +277,16 @@ class LifecycleEventsListenerTest extends \PHPUnit_Framework_TestCase
         $this->dispatcher->expects($this->once())
             ->method('addUpdate')
             ->with($annotation, $user, [], ['friends' => ['deleted' => $deleted, 'inserted' => $inserted]]);
+
+        $this->manager
+            ->method('getClassMetadata')
+            ->with(ClassUtils::getRealClass(get_class($user)))
+            ->willReturn($this->classMetadata);
+
+        $this->classMetadata
+            ->method('getReflectionProperty')
+            ->with('friends')
+            ->willReturn(new \ReflectionProperty($user, 'friends'));
 
         $this->listener->preUpdate($event);
     }
@@ -302,6 +354,20 @@ class LifecycleEventsListenerTest extends \PHPUnit_Framework_TestCase
         $uow->method('getDeleteDiff')->willReturn($deleted);
         $inserted = [new User()];
         $uow->method('getInsertDiff')->willReturn($inserted);
+
+        $this->manager
+            ->method('getClassMetadata')
+            ->with(ClassUtils::getRealClass(get_class($user)))
+            ->willReturn($this->classMetadata);
+
+        $this->classMetadata
+            ->method('getName')
+            ->willReturn(get_class($user));
+
+        $this->classMetadata
+            ->method('getReflectionProperty')
+            ->with('foo')
+            ->willReturn(null);
 
         $this->dispatcher->expects($this->never())
             ->method('addUpdate')

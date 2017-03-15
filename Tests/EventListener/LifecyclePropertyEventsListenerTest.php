@@ -5,8 +5,10 @@ namespace W3C\LifecycleEventsBundle\Tests\EventListener;
 use Doctrine\Common\Annotations\AnnotationReader;
 use Doctrine\Common\Annotations\AnnotationRegistry;
 use Doctrine\Common\Annotations\Reader;
+use Doctrine\Common\Util\ClassUtils;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\Event\PreUpdateEventArgs;
+use Doctrine\ORM\Mapping\ClassMetadata;
 use Doctrine\ORM\UnitOfWork;
 use PHPUnit_Framework_MockObject_MockObject as MockObject;
 use W3C\LifecycleEventsBundle\Annotation\Change;
@@ -50,6 +52,11 @@ class LifecyclePropertyEventsListenerTest extends \PHPUnit_Framework_TestCase
      */
     private $uow;
 
+    /**
+     * @var ClassMetadata|MockObject
+     */
+    private $classMetadata;
+
     public function setUp()
     {
         parent::setUp();
@@ -66,6 +73,11 @@ class LifecyclePropertyEventsListenerTest extends \PHPUnit_Framework_TestCase
 
         $this->manager = $this
             ->getMockBuilder(EntityManagerInterface::class)
+            ->disableOriginalConstructor()
+            ->getMock();
+
+        $this->classMetadata = $this
+            ->getMockBuilder(ClassMetadata::class)
             ->disableOriginalConstructor()
             ->getMock();
 
@@ -92,7 +104,17 @@ class LifecyclePropertyEventsListenerTest extends \PHPUnit_Framework_TestCase
 
         $this->manager->method('getUnitOfWork')->willReturn($this->uow);
         $this->uow->method('getScheduledCollectionUpdates')->willReturn([]);
-        
+
+        $this->manager
+            ->method('getClassMetadata')
+            ->with(ClassUtils::getRealClass(get_class($user)))
+            ->willReturn($this->classMetadata);
+
+        $this->classMetadata
+            ->method('getReflectionProperty')
+            ->with('name')
+            ->willReturn(new \ReflectionProperty($user, 'name'));
+
         $this->dispatcher->expects($this->once())
             ->method('addPropertyChange')
             ->with($annotation, $user, 'name', 'foo', 'bar');
@@ -121,6 +143,16 @@ class LifecyclePropertyEventsListenerTest extends \PHPUnit_Framework_TestCase
         $inserted = [new User()];
         $this->uow->method('getInsertDiff')->willReturn($inserted);
 
+        $this->manager
+            ->method('getClassMetadata')
+            ->with(ClassUtils::getRealClass(get_class($user)))
+            ->willReturn($this->classMetadata);
+
+        $this->classMetadata
+            ->method('getReflectionProperty')
+            ->with('friends')
+            ->willReturn(new \ReflectionProperty($user, 'friends'));
+
         $this->dispatcher->expects($this->once())
             ->method('addCollectionChange')
             ->with($annotation, $user, 'friends', $deleted, $inserted);
@@ -145,6 +177,20 @@ class LifecyclePropertyEventsListenerTest extends \PHPUnit_Framework_TestCase
         $inserted = [new User()];
         $this->uow->method('getInsertDiff')->willReturn($inserted);
 
+        $this->manager
+            ->method('getClassMetadata')
+            ->with(ClassUtils::getRealClass(get_class($user)))
+            ->willReturn($this->classMetadata);
+
+        $this->classMetadata
+            ->method('getName')
+            ->willReturn(get_class($user));
+
+        $this->classMetadata
+            ->method('getReflectionProperty')
+            ->with('foo')
+            ->willReturn(null);
+
         $this->dispatcher->expects($this->never())
             ->method('addCollectionChange');
 
@@ -165,6 +211,16 @@ class LifecyclePropertyEventsListenerTest extends \PHPUnit_Framework_TestCase
         $this->uow->method('getDeleteDiff')->willReturn($deleted);
         $inserted = [new User()];
         $this->uow->method('getInsertDiff')->willReturn($inserted);
+
+        $this->manager
+            ->method('getClassMetadata')
+            ->with(ClassUtils::getRealClass(get_class($user)))
+            ->willReturn($this->classMetadata);
+
+        $this->classMetadata
+            ->method('getReflectionProperty')
+            ->with('friends')
+            ->willReturn(new \ReflectionProperty($user, 'friends'));
 
         $this->dispatcher->expects($this->never())
             ->method('addCollectionChange');
