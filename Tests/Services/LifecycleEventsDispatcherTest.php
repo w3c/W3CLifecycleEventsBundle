@@ -141,12 +141,12 @@ class LifecycleEventsDispatcherTest extends TestCase
             $annotation,
             $user,
             ['name' => ['foo', 'bar']],
-            null
+            []
         );
 
         $this->assertCount(1, $this->dispatcher->getUpdates());
 
-        $expectedEvent = new LifecycleUpdateEvent($user, ['name' => ['foo', 'bar']], null);
+        $expectedEvent = new LifecycleUpdateEvent($user, ['name' => ['foo', 'bar']], []);
         $this->sfDispatcher->expects($this->once())
             ->method('dispatch')
             ->with(LifecycleEvents::UPDATED, $expectedEvent);
@@ -165,12 +165,12 @@ class LifecycleEventsDispatcherTest extends TestCase
             $annotation,
             $user,
             ['name' => ['foo', 'bar']],
-            null
+            []
         );
 
         $this->assertCount(1, $this->dispatcher->getUpdates());
 
-        $expectedEvent = new $annotation->class($user, ['name' => ['foo', 'bar']], null);
+        $expectedEvent = new $annotation->class($user, ['name' => ['foo', 'bar']], []);
         $this->sfDispatcher->expects($this->once())
             ->method('dispatch')
             ->with($annotation->event, $expectedEvent);

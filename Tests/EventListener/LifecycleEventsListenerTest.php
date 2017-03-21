@@ -169,7 +169,7 @@ class LifecycleEventsListenerTest extends \PHPUnit_Framework_TestCase
 
         $this->dispatcher->expects($this->once())
             ->method('addUpdate')
-            ->with($annotation, $user, ['name' => ['old' => null, 'new' => 'foo']], null);
+            ->with($annotation, $user, ['name' => ['old' => null, 'new' => 'foo']], []);
 
         $this->listener->preUpdate($event);
     }
@@ -198,7 +198,7 @@ class LifecycleEventsListenerTest extends \PHPUnit_Framework_TestCase
 
         $this->dispatcher->expects($this->once())
             ->method('addUpdate')
-            ->with($annotation, $user, [], null);
+            ->with($annotation, $user, [], []);
 
         $this->listener->preUpdate($event);
     }
@@ -242,7 +242,7 @@ class LifecycleEventsListenerTest extends \PHPUnit_Framework_TestCase
 
         $this->dispatcher->expects($this->once())
             ->method('addUpdate')
-            ->with($annotation, $user, [], null);
+            ->with($annotation, $user, [], []);
 
         $this->listener->preUpdate($event);
     }
@@ -321,7 +321,7 @@ class LifecycleEventsListenerTest extends \PHPUnit_Framework_TestCase
 
         $this->dispatcher->expects($this->once())
             ->method('addUpdate')
-            ->with($annotation, $user, [], null);
+            ->with($annotation, $user, [], []);
 
         $this->listener->preUpdate($event);
     }

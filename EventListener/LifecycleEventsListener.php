@@ -97,7 +97,7 @@ class LifecycleEventsListener
                 $annotation,
                 $entity,
                 $this->buildChangeSet($args, $entity),
-                $annotation->monitor_collections ? $this->buildCollectionChanges($args, $entity) : null
+                $annotation->monitor_collections ? $this->buildCollectionChanges($args, $entity) : []
             );
         }
     }
@@ -114,7 +114,7 @@ class LifecycleEventsListener
     {
         $realClass          = ClassUtils::getRealClass(get_class($entity));
         $classMetadata      = $args->getEntityManager()->getClassMetadata($realClass);
-        $collectionsChanges = null;
+        $collectionsChanges = [];
 
         /** @var PersistentCollection $u */
         foreach ($args->getEntityManager()->getUnitOfWork()->getScheduledCollectionUpdates() as $u) {
