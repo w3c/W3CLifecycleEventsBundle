@@ -4,7 +4,6 @@ namespace W3C\LifecycleEventsBundle\EventListener;
 
 use Doctrine\Common\Annotations\Reader;
 use Doctrine\Common\Util\ClassUtils;
-use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\Event\LifecycleEventArgs;
 use Doctrine\ORM\Event\PreUpdateEventArgs;
 use Doctrine\ORM\Mapping\ClassMetadata;
@@ -67,12 +66,12 @@ class LifecycleEventsListener
                 if ($classMetadata->isSingleValuedAssociation($property)) {
                     $inverse = $classMetadata->reflFields[$property]->getValue($entity);
                     $change  = ['old' => null, 'new' => $inverse];
-                    $this->propertyUpdateInverse($args->getEntityManager(), $class, $property, $change, $entity);
+                    $this->propertyUpdateInverse($args, $class, $property, $change, $entity);
                 } elseif ($classMetadata->isCollectionValuedAssociation($property)) {
                     $inverse = $classMetadata->reflFields[$property]->getValue($entity);
                     if ($inverse) {
                         $change = ['deleted' => [], 'inserted' => $inverse->toArray()];
-                        $this->collectionUpdateInverse($args->getEntityManager(), $class, $property, $change, $entity);
+                        $this->collectionUpdateInverse($args, $class, $property, $change, $entity);
                     }
                 }
             }
@@ -107,12 +106,12 @@ class LifecycleEventsListener
                 if ($classMetadata->isSingleValuedAssociation($property)) {
                     $inverse = $classMetadata->reflFields[$property]->getValue($entity);
                     $change  = ['old' => $inverse, 'new' => null];
-                    $this->propertyUpdateInverse($args->getEntityManager(), $class, $property, $change, $entity);
+                    $this->propertyUpdateInverse($args, $class, $property, $change, $entity);
                 } elseif ($classMetadata->isCollectionValuedAssociation($property)) {
                     $inverse = $classMetadata->reflFields[$property]->getValue($entity);
                     if ($inverse) {
                         $change = ['deleted' => $inverse->toArray(), 'inserted' => []];
-                        $this->collectionUpdateInverse($args->getEntityManager(), $class, $property, $change, $entity);
+                        $this->collectionUpdateInverse($args, $class, $property, $change, $entity);
                     }
                 }
             }
@@ -180,7 +179,7 @@ class LifecycleEventsListener
                 $collectionsChanges[$property] = $change;
             }
 
-            $this->collectionUpdateInverse($args->getEntityManager(), $realClass, $property, $change, $entity);
+            $this->collectionUpdateInverse($args, $realClass, $property, $change, $entity);
         }
         return $collectionsChanges;
     }
@@ -206,7 +205,7 @@ class LifecycleEventsListener
             }
 
             if ($classMetadata->hasAssociation($property)) {
-                $this->propertyUpdateInverse($args->getEntityManager(), $realClass, $property, $change, $entity);
+                $this->propertyUpdateInverse($args, $realClass, $property, $change, $entity);
             }
         }
         return $changes;
@@ -253,14 +252,15 @@ class LifecycleEventsListener
     }
 
     /**
-     * @param EntityManagerInterface $em
+     * @param LifecycleEventArgs $args
      * @param $class
      * @param $property
      * @param $change
      * @param $entity
      */
-    private function collectionUpdateInverse(EntityManagerInterface $em, $class, $property, $change, $entity)
+    private function collectionUpdateInverse(LifecycleEventArgs $args, $class, $property, $change, $entity)
     {
+        $em = $args->getEntityManager();
         $classMetadata = $em->getClassMetadata($class);
 
         // it is indeed an association with a potential inverse side
@@ -299,14 +299,15 @@ class LifecycleEventsListener
     }
 
     /**
-     * @param EntityManagerInterface $em
+     * @param LifecycleEventArgs $args
      * @param $class
      * @param $property
      * @param $change
      * @param $entity
      */
-    private function propertyUpdateInverse(EntityManagerInterface $em, $class, $property, $change, $entity)
+    private function propertyUpdateInverse(LifecycleEventArgs $args, $class, $property, $change, $entity)
     {
+        $em = $args->getEntityManager();
         $classMetadata = $em->getClassMetadata($class);
 
         $mapping = $classMetadata->getAssociationMapping($property);
