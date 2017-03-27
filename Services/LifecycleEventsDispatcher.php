@@ -234,7 +234,24 @@ class LifecycleEventsDispatcher
 
     public function addUpdate(Update $annotation, $entity, array $propertyChangeSet = null, array $collectionChangeSet = null)
     {
-        $this->updates[] = [$annotation, $entity, $propertyChangeSet, $collectionChangeSet];
+        if ($update = $this->getUpdate($entity)) {
+            $update[1][2] = array_merge_recursive((array)$update[1][2], (array)$propertyChangeSet);
+            $update[1][3] = array_merge_recursive((array)$update[1][3], (array)$collectionChangeSet);
+            $this->updates[$update[0]] = $update[1];
+        } else {
+            $this->updates[] = [$annotation, $entity, $propertyChangeSet, $collectionChangeSet];
+        }
+    }
+
+    public function getUpdate($entity)
+    {
+        foreach ($this->updates as $key => $update) {
+            if ($update[1] === $entity) {
+                return [$key, $update];
+            }
+        }
+        $res = null;
+        return $res;
     }
 
     public function getPropertyChanges()

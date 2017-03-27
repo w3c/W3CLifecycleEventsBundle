@@ -292,4 +292,95 @@ class LifecycleEventsDispatcherTest extends TestCase
         $this->dispatcher->setAutoDispatch(false);
         $this->assertFalse($this->dispatcher->getAutoDispatch());
     }
+
+    public function testGetUpdate()
+    {
+        $user       = new User();
+        $annotation = new Update();
+
+        $this->assertNull($this->dispatcher->getUpdate($user));
+
+        $this->dispatcher->addUpdate(
+            $annotation,
+            new User(),
+            ['name' => ['foo', 'bar']],
+            []
+        );
+
+        $this->dispatcher->addUpdate(
+            $annotation,
+            $user,
+            ['name' => ['foo', 'bar']],
+            []
+        );
+
+        $this->dispatcher->addUpdate(
+            $annotation,
+            new User(),
+            ['name' => ['foo', 'bar']],
+            []
+        );
+
+        $this->assertSame([1, [$annotation, $user, ['name' => ['foo', 'bar']], []]], $this->dispatcher->getUpdate($user));
+    }
+
+    public function testAddUpdate()
+    {
+        $user       = new User();
+        $annotation = new Update();
+
+        $this->assertNull($this->dispatcher->getUpdate($user));
+
+        $this->dispatcher->addUpdate(
+            $annotation,
+            new User(),
+            ['name' => ['old' => 'foo', 'new' => 'bar']],
+            []
+        );
+
+        $this->dispatcher->addUpdate(
+            $annotation,
+            $user,
+            ['name' => ['old' => 'foo', 'new' => 'bar']],
+            []
+        );
+
+        $this->assertCount(2, $this->dispatcher->getUpdates());
+
+        $this->dispatcher->addUpdate(
+            $annotation,
+            $user,
+            [],
+            ['friends' => ['deleted' => 'foo', 'inserted' => 'bar']]
+        );
+
+        $this->assertCount(2, $this->dispatcher->getUpdates());
+        $this->assertSame([
+                1,
+                [
+                    $annotation,
+                    $user,
+                    ['name' => ['old' => 'foo', 'new' => 'bar']],
+                    ['friends' => ['deleted' => 'foo', 'inserted' => 'bar']]
+                ]
+            ], $this->dispatcher->getUpdate($user));
+
+        $this->dispatcher->addUpdate(
+            $annotation,
+            $user,
+            ['foo' => ['old' => 'a', 'new' => 'b']],
+            []
+        );
+
+        $this->assertCount(2, $this->dispatcher->getUpdates());
+        $this->assertSame([
+            1,
+            [
+                $annotation,
+                $user,
+                ['name' => ['old' => 'foo', 'new' => 'bar'], 'foo' => ['old' => 'a', 'new' => 'b']],
+                ['friends' => ['deleted' => 'foo', 'inserted' => 'bar']]
+            ]
+        ], $this->dispatcher->getUpdate($user));
+    }
 }
