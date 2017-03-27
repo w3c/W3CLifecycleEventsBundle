@@ -87,6 +87,15 @@ class LifecycleEventsListenerTest extends \PHPUnit_Framework_TestCase
         $this->dispatcher->expects($this->once())
             ->method('addCreation');
 
+        $this->manager
+            ->method('getClassMetadata')
+            ->with(ClassUtils::getRealClass(get_class($user)))
+            ->willReturn($this->classMetadata);
+
+        $this->classMetadata
+            ->method('getAssociationMappings')
+            ->willReturn(['friends' => []]);
+
         $this->listener->postPersist($event);
     }
 
@@ -98,10 +107,19 @@ class LifecycleEventsListenerTest extends \PHPUnit_Framework_TestCase
         $this->dispatcher->expects($this->never())
             ->method('addCreation');
 
+        $this->manager
+            ->method('getClassMetadata')
+            ->with(ClassUtils::getRealClass(get_class($user)))
+            ->willReturn($this->classMetadata);
+
+        $this->classMetadata
+            ->method('getAssociationMappings')
+            ->willReturn(['friends' => []]);
+
         $this->listener->postPersist($event);
     }
 
-    public function testPostRemove()
+    public function testPreRemove()
     {
         $user  = new User();
         $event = new LifecycleEventArgs($user, $this->manager);
@@ -109,10 +127,19 @@ class LifecycleEventsListenerTest extends \PHPUnit_Framework_TestCase
         $this->dispatcher->expects($this->once())
             ->method('addDeletion');
 
-        $this->listener->postRemove($event);
+        $this->manager
+            ->method('getClassMetadata')
+            ->with(ClassUtils::getRealClass(get_class($user)))
+            ->willReturn($this->classMetadata);
+
+        $this->classMetadata
+            ->method('getAssociationMappings')
+            ->willReturn(['friends' => []]);
+
+        $this->listener->preRemove($event);
     }
 
-    public function testPostRemoveNoAnnotation()
+    public function testPreRemoveNoAnnotation()
     {
         $user  = new UserNoAnnotation();
         $event = new LifecycleEventArgs($user, $this->manager);
@@ -120,10 +147,19 @@ class LifecycleEventsListenerTest extends \PHPUnit_Framework_TestCase
         $this->dispatcher->expects($this->never())
             ->method('addDeletion');
 
-        $this->listener->postRemove($event);
+        $this->manager
+            ->method('getClassMetadata')
+            ->with(ClassUtils::getRealClass(get_class($user)))
+            ->willReturn($this->classMetadata);
+
+        $this->classMetadata
+            ->method('getAssociationMappings')
+            ->willReturn([]);
+
+        $this->listener->preRemove($event);
     }
 
-    public function testPostSoftDelete()
+    public function testPreSoftDelete()
     {
         $user  = new User();
         $event = new LifecycleEventArgs($user, $this->manager);
@@ -131,10 +167,19 @@ class LifecycleEventsListenerTest extends \PHPUnit_Framework_TestCase
         $this->dispatcher->expects($this->once())
             ->method('addDeletion');
 
-        $this->listener->postSoftDelete($event);
+        $this->manager
+            ->method('getClassMetadata')
+            ->with(ClassUtils::getRealClass(get_class($user)))
+            ->willReturn($this->classMetadata);
+
+        $this->classMetadata
+            ->method('getAssociationMappings')
+            ->willReturn(['friends' => []]);
+
+        $this->listener->preSoftDelete($event);
     }
 
-    public function testPostSoftDeleteNoAnnotation()
+    public function testPreSoftDeleteNoAnnotation()
     {
         $user  = new UserNoAnnotation();
         $event = new LifecycleEventArgs($user, $this->manager);
@@ -142,7 +187,16 @@ class LifecycleEventsListenerTest extends \PHPUnit_Framework_TestCase
         $this->dispatcher->expects($this->never())
             ->method('addDeletion');
 
-        $this->listener->postSoftDelete($event);
+        $this->manager
+            ->method('getClassMetadata')
+            ->with(ClassUtils::getRealClass(get_class($user)))
+            ->willReturn($this->classMetadata);
+
+        $this->classMetadata
+            ->method('getAssociationMappings')
+            ->willReturn([]);
+
+        $this->listener->preSoftDelete($event);
     }
 
     public function testPreUpdateNoCollection()

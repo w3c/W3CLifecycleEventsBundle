@@ -13,7 +13,7 @@ This Symfony bundle is meant to capture and dispatch events that happen througho
 Doctrine already provides such events, but using them directly has a few shortcomings:
 - You don't decide at which point in a action you want to dispatch events. Events are fired during a flush.
 - When Doctrine events are fired, you are not assured that the entities have actually been saved in the database. 
-This is obvious for preUpdate (sent before persisting the changes), but postPersist and postRemove have the same issue: 
+This is obvious for preUpdate (sent before persisting the changes), but postPersist and preRemove have the same issue: 
 if you persist two new entities in a single transaction, the first insert could work (thus an event would be sent) but 
 not the second, resulting in no entities being saved at all
 
@@ -112,6 +112,7 @@ must have a constructor with the following signature:
 public function __construct($entity, array $propertiesChangeSet = null, array $collectionsChangeSet = null)
 ```
 - `monitor_collections`: whether the annotation should monitor changes to collection fields. Defaults to true
+- `monitor_owning`: whether owning side relationship changes should be also monitored as inverse side changes. Defaults to false
 
 #### `@On\Change`
 
