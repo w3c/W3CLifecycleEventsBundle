@@ -4,6 +4,7 @@ namespace W3C\LifecycleEventsBundle\Services;
 
 use Doctrine\Common\Persistence\Event\LifecycleEventArgs;
 use Doctrine\Common\Persistence\Event\PreUpdateEventArgs;
+use Doctrine\Common\Util\ClassUtils;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use W3C\LifecycleEventsBundle\Annotation\Change;
 use W3C\LifecycleEventsBundle\Annotation\Create;
@@ -135,9 +136,10 @@ class LifecycleEventsDispatcher
             $annotation = $deletion[0];
             /** @var LifecycleEventArgs $eventArgs */
             $eventArgs  = $deletion[1];
+            $identifier = $deletion[2];
             $entity     = $eventArgs->getObject();
 
-            $this->dispatcher->dispatch($annotation->event, new $annotation->class($entity));
+            $this->dispatcher->dispatch($annotation->event, new $annotation->class($entity, $identifier));
         }
     }
 
@@ -219,7 +221,15 @@ class LifecycleEventsDispatcher
 
     public function addDeletion(Delete $annotation, LifecycleEventArgs $args)
     {
-        $this->deletions[] = [$annotation, $args];
+        $classMetadata = $args->getObjectManager()->getClassMetadata(ClassUtils::getRealClass(get_class($args->getObject())));
+        $this->deletions[] = [
+            $annotation,
+            $args,
+            array_combine(
+                $classMetadata->getIdentifierFieldNames(),
+                $classMetadata->getIdentifierValues($args->getObject())
+            )
+        ];
     }
 
     /**

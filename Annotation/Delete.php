@@ -3,7 +3,7 @@
 namespace W3C\LifecycleEventsBundle\Annotation;
 
 use W3C\LifecycleEventsBundle\Event\Definitions\LifecycleEvents;
-use W3C\LifecycleEventsBundle\Event\LifecycleEvent;
+use W3C\LifecycleEventsBundle\Event\LifecycleDeletionEvent;
 
 /**
  * @Annotation
@@ -21,6 +21,6 @@ class Delete
     /**
      * @var string
      */
-    public $class = LifecycleEvent::class;
+    public $class = LifecycleDeletionEvent::class;
 
 }

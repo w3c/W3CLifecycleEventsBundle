@@ -91,8 +91,9 @@ must have a constructor with the following signature:
 <?php
 /**
  * @param mixed $entity the entity being deleted
+ * @param array $identifier identifier of the entity being deleted
  */
-public function __construct($entity)
+public function __construct($entity, $identifier)
 ```
 
 #### `@On\Update`

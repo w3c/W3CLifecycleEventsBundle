@@ -9,7 +9,12 @@ use Symfony\Component\EventDispatcher\Event;
  */
 class MyLifecycleEvent extends Event
 {
-    public function __construct($entity)
+    private $entity;
+    private $identifier;
+
+    public function __construct($entity, $identifier = null)
     {
+        $this->entity = $entity;
+        $this->identifier = $identifier;
     }
 }
