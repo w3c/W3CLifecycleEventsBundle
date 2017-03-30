@@ -5,7 +5,7 @@ namespace W3C\LifecycleEventsBundle\Event;
 use Symfony\Component\EventDispatcher\Event;
 
 /**
- * LifecycleEvent is used when an entity is created or deleted
+ * LifecycleEvent is used when an entity is created
  *
  * @author Jean-Guilhem Rouel <jean-gui@w3.org>
  */

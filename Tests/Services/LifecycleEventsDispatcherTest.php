@@ -4,6 +4,7 @@ namespace W3C\LifecycleEventsBundle\Tests\Services;
 
 use Doctrine\Common\Persistence\Event\LifecycleEventArgs;
 use Doctrine\Common\Persistence\ObjectManager;
+use Doctrine\ORM\Mapping\ClassMetadata;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use W3C\LifecycleEventsBundle\Annotation\Change;
@@ -12,6 +13,7 @@ use W3C\LifecycleEventsBundle\Annotation\Delete;
 use W3C\LifecycleEventsBundle\Annotation\Update;
 use W3C\LifecycleEventsBundle\Event\Definitions\LifecycleEvents;
 use W3C\LifecycleEventsBundle\Event\LifecycleCollectionChangedEvent;
+use W3C\LifecycleEventsBundle\Event\LifecycleDeletionEvent;
 use W3C\LifecycleEventsBundle\Event\LifecycleEvent;
 use W3C\LifecycleEventsBundle\Event\LifecyclePropertyChangedEvent;
 use W3C\LifecycleEventsBundle\Event\LifecycleUpdateEvent;
@@ -44,6 +46,11 @@ class LifecycleEventsDispatcherTest extends TestCase
      */
     private $objectManager;
 
+    /**
+     * @var ClassMetadata|\PHPUnit_Framework_MockObject_MockObject
+     */
+    private $classMetadata;
+
     public function setUp()
     {
         parent::setUp();
@@ -56,6 +63,10 @@ class LifecycleEventsDispatcherTest extends TestCase
         $this->dispatcher = new LifecycleEventsDispatcher($this->sfDispatcher, true);
         $this->objectManager = $this
             ->getMockBuilder(ObjectManager::class)
+            ->disableOriginalConstructor()
+            ->getMock();
+        $this->classMetadata = $this
+            ->getMockBuilder(ClassMetadata::class)
             ->disableOriginalConstructor()
             ->getMock();
     }
@@ -85,6 +96,7 @@ class LifecycleEventsDispatcherTest extends TestCase
         $annotation->event = 'test';
         $annotation->class = MyLifecycleEvent::class;
         $args       = new LifecycleEventArgs($user, $this->objectManager);
+
         $this->dispatcher->addCreation($annotation, $args);
 
         $this->assertCount(1, $this->dispatcher->getCreations());
@@ -102,11 +114,20 @@ class LifecycleEventsDispatcherTest extends TestCase
         $user       = new User();
         $annotation = new Delete();
         $args       = new LifecycleEventArgs($user, $this->objectManager);
+
+        $this->objectManager->method('getClassMetadata')->willReturn($this->classMetadata);
+        $this->classMetadata->expects($this->once())
+            ->method('getIdentifierFieldNames')
+            ->willReturn(['name']);
+        $this->classMetadata->expects($this->once())
+            ->method('getIdentifierValues')
+            ->willReturn(['toto']);
+
         $this->dispatcher->addDeletion($annotation, $args);
 
         $this->assertCount(1, $this->dispatcher->getDeletions());
 
-        $expectedEvent = new LifecycleEvent($user);
+        $expectedEvent = new LifecycleDeletionEvent($user, ['name' => 'toto']);
         $this->sfDispatcher->expects($this->once())
             ->method('dispatch')
             ->with(LifecycleEvents::DELETED, $expectedEvent);
@@ -122,14 +143,23 @@ class LifecycleEventsDispatcherTest extends TestCase
         $annotation->class = MyLifecycleEvent::class;
 
         $args       = new LifecycleEventArgs($user, $this->objectManager);
+
+        $this->objectManager->method('getClassMetadata')->willReturn($this->classMetadata);
+        $this->classMetadata->expects($this->once())
+            ->method('getIdentifierFieldNames')
+            ->willReturn(['name']);
+        $this->classMetadata->expects($this->once())
+            ->method('getIdentifierValues')
+            ->willReturn(['toto']);
+
         $this->dispatcher->addDeletion($annotation, $args);
 
         $this->assertCount(1, $this->dispatcher->getDeletions());
 
-        $expectedEvent = new $annotation->class($user);
+        $expectedEvent = new $annotation->class($user, ['name' => 'toto']);
         $this->sfDispatcher->expects($this->once())
             ->method('dispatch')
-            ->with($annotation->event, $expectedEvent);
+            ->with($annotation->event, $this->equalTo($expectedEvent));
 
         $this->dispatcher->dispatchEvents();
     }
