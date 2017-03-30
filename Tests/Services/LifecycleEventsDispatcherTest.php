@@ -17,6 +17,7 @@ use W3C\LifecycleEventsBundle\Event\LifecyclePropertyChangedEvent;
 use W3C\LifecycleEventsBundle\Event\LifecycleUpdateEvent;
 use W3C\LifecycleEventsBundle\Event\PreAutoDispatchEvent;
 use W3C\LifecycleEventsBundle\Services\LifecycleEventsDispatcher;
+use W3C\LifecycleEventsBundle\Tests\Annotation\Fixtures\Person;
 use W3C\LifecycleEventsBundle\Tests\Annotation\Fixtures\User;
 use W3C\LifecycleEventsBundle\Tests\Services\Events\MyCollectionChangedEvent;
 use W3C\LifecycleEventsBundle\Tests\Services\Events\MyLifecycleEvent;
@@ -382,5 +383,111 @@ class LifecycleEventsDispatcherTest extends TestCase
                 ['friends' => ['deleted' => 'foo', 'inserted' => 'bar']]
             ]
         ], $this->dispatcher->getUpdate($user));
+    }
+
+    public function testGetCollectionChange()
+    {
+        $father     = new Person();
+        $son1       = new Person();
+        $son2       = new Person();
+        $annotation = new Change();
+
+        $this->assertNull($this->dispatcher->getCollectionChange($father, 'sons'));
+
+        $this->dispatcher->addCollectionChange(
+            $annotation,
+            new Person(),
+            'sons',
+            [new Person(), new Person()],
+            [new Person()]
+        );
+
+        $this->dispatcher->addCollectionChange(
+            $annotation,
+            $father,
+            'sons',
+            [$son1],
+            [$son2]
+        );
+
+        $this->dispatcher->addCollectionChange(
+            $annotation,
+            new Person(),
+            'foo',
+            [],
+            ['bar']
+        );
+
+        $this->assertSame([1, [$annotation, $father, 'sons', [$son1], [$son2]]],
+            $this->dispatcher->getCollectionChange($father, 'sons'));
+    }
+
+    public function testAddCollectionUpdate()
+    {
+        $father     = new Person();
+        $son1       = new Person();
+        $son2       = new Person();
+        $son3       = new Person();
+        $annotation = new Change();
+
+        $this->assertNull($this->dispatcher->getCollectionChange($father, 'sons'));
+
+        $this->dispatcher->addCollectionChange(
+            $annotation,
+            new Person(),
+            'sons',
+            [new Person(), new Person()],
+            [new Person()]
+        );
+
+        $this->dispatcher->addCollectionChange(
+            $annotation,
+            $father,
+            'sons',
+            [],
+            [$son2]
+        );
+
+        $this->assertCount(2, $this->dispatcher->getCollectionChanges());
+
+        $this->dispatcher->addCollectionChange(
+            $annotation,
+            $father,
+            'sons',
+            [$son1],
+            [$son3]
+        );
+
+        $this->assertCount(2, $this->dispatcher->getCollectionChanges());
+        $this->assertSame([
+            1,
+            [
+                $annotation,
+                $father,
+                'sons',
+                [$son1],
+                [$son2, $son3]
+            ]
+        ], $this->dispatcher->getCollectionChange($father, 'sons'));
+
+        $this->dispatcher->addCollectionChange(
+            $annotation,
+            $father,
+            'foo',
+            [$son1],
+            [$son3]
+        );
+
+        $this->assertCount(3, $this->dispatcher->getCollectionChanges());
+        $this->assertSame([
+            1,
+            [
+                $annotation,
+                $father,
+                'sons',
+                [$son1],
+                [$son2, $son3]
+            ]
+        ], $this->dispatcher->getCollectionChange($father, 'sons'));
     }
 }

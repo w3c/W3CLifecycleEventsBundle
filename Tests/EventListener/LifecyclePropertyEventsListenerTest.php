@@ -15,6 +15,7 @@ use W3C\LifecycleEventsBundle\Annotation\Change;
 use W3C\LifecycleEventsBundle\Annotation\Update;
 use W3C\LifecycleEventsBundle\EventListener\LifecycleEventsListener;
 use W3C\LifecycleEventsBundle\EventListener\LifecyclePropertyEventsListener;
+use W3C\LifecycleEventsBundle\Services\AnnotationGetter;
 use W3C\LifecycleEventsBundle\Services\LifecycleEventsDispatcher;
 use W3C\LifecycleEventsBundle\Tests\Annotation\Fixtures\User;
 use W3C\LifecycleEventsBundle\Tests\EventListener\Fixtures\OtherEntity;
@@ -33,14 +34,14 @@ class LifecyclePropertyEventsListenerTest extends \PHPUnit_Framework_TestCase
     private $listener;
 
     /**
-     * @var Reader
-     */
-    private $reader;
-
-    /**
      * @var LifecycleEventsDispatcher|MockObject
      */
     private $dispatcher;
+
+    /**
+     * @var Reader
+     */
+    private $reader;
 
     /**
      * @var EntityManagerInterface|MockObject
@@ -87,7 +88,7 @@ class LifecyclePropertyEventsListenerTest extends \PHPUnit_Framework_TestCase
             ->setMethods(['getScheduledCollectionUpdates', 'getOwner', 'getMapping', 'getDeleteDiff', 'getInsertDiff'])
             ->getMock();
 
-        $this->listener = new LifecyclePropertyEventsListener($this->dispatcher, $this->reader);
+        $this->listener = new LifecyclePropertyEventsListener($this->dispatcher, new AnnotationGetter($this->reader));
     }
 
     public function testPreUpdateProperty()

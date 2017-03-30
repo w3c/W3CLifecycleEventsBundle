@@ -14,6 +14,7 @@ use Doctrine\ORM\UnitOfWork;
 use PHPUnit_Framework_MockObject_MockObject as MockObject;
 use W3C\LifecycleEventsBundle\Annotation\Update;
 use W3C\LifecycleEventsBundle\EventListener\LifecycleEventsListener;
+use W3C\LifecycleEventsBundle\Services\AnnotationGetter;
 use W3C\LifecycleEventsBundle\Services\LifecycleEventsDispatcher;
 use W3C\LifecycleEventsBundle\Tests\Annotation\Fixtures\User;
 use W3C\LifecycleEventsBundle\Tests\EventListener\Fixtures\UserClassUpdateCollection;
@@ -33,14 +34,14 @@ class LifecycleEventsListenerTest extends \PHPUnit_Framework_TestCase
     private $listener;
 
     /**
-     * @var Reader
-     */
-    private $reader;
-
-    /**
      * @var LifecycleEventsDispatcher|MockObject
      */
     private $dispatcher;
+
+    /**
+     * @var Reader
+     */
+    private $reader;
 
     /**
      * @var EntityManagerInterface|MockObject
@@ -76,7 +77,7 @@ class LifecycleEventsListenerTest extends \PHPUnit_Framework_TestCase
             ->disableOriginalConstructor()
             ->getMock();
 
-        $this->listener = new LifecycleEventsListener($this->dispatcher, $this->reader);
+        $this->listener = new LifecycleEventsListener($this->dispatcher, new AnnotationGetter($this->reader));
     }
 
     public function testPostPersist()

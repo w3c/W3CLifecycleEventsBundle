@@ -20,17 +20,18 @@ class Person
 
     /**
      * @ ORM\ManyToMany(targetEntity="Person", mappedBy="friends")
+     * @On\Change(monitor_owning=true)
      */
     public $friendOf;
 
     /**
      * @ ORM\ManyToOne(targetEntity="Person", inversedBy="sons")
-     * @On\Change()
      */
     public $father;
 
     /**
      * @ ORM\OneToMany(targetEntity="Person", mappedBy="father")
+     * @On\Change(monitor_owning=true)
      */
     public $sons;
 
@@ -41,6 +42,7 @@ class Person
 
     /**
      * @ ORM\OneToOne(targetEntity="Person", mappedBy="mentor")
+     * @On\Change(monitor_owning=true)
      */
     public $mentoring;
 }

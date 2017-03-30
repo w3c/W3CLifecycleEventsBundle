@@ -4,8 +4,12 @@ parameters:
     w3c_lifecycle_events.dispatcher.class: W3C\LifecycleEventsBundle\Services\LifecycleEventsDispatcher
     w3c_lifecycle_events.post_flush_listener.class: W3C\LifecycleEventsBundle\EventListener\PostFlushListener
     w3c_lifecycle_events.auto_dispatch: ''
+    w3c_lifecycle_events.annotation_getter.class: W3C\LifecycleEventsBundle\Services\AnnotationGetter
 
 services:
+    w3c_lifecycle_events.annotation_getter:
+        class: "%w3c_lifecycle_events.annotation_getter.class%"
+        arguments: ["@annotation_reader"]
     w3c_lifecycle_events.dispatcher:
         class: "%w3c_lifecycle_events.dispatcher.class%"
         arguments: ['@event_dispatcher', '%w3c_lifecycle_events.auto_dispatch%']
@@ -16,12 +20,12 @@ services:
             - { name: doctrine.event_listener, event: preRemove }
             - { name: doctrine.event_listener, event: preSoftDelete }
             - { name: doctrine.event_listener, event: preUpdate }
-        arguments: ['@w3c_lifecycle_events.dispatcher', '@annotation_reader']
+        arguments: ['@w3c_lifecycle_events.dispatcher', '@w3c_lifecycle_events.annotation_getter']
     w3c_lifecycle_events.property_listener:
         class: "%w3c_lifecycle_events.property_listener.class%"
         tags:
             - { name: doctrine.event_listener, event: preUpdate }
-        arguments: ['@w3c_lifecycle_events.dispatcher', '@annotation_reader']
+        arguments: ['@w3c_lifecycle_events.dispatcher', '@w3c_lifecycle_events.annotation_getter']
     w3c_lifecycle_events.post_flush_listener:
         class: "%w3c_lifecycle_events.post_flush_listener.class%"
         tags:

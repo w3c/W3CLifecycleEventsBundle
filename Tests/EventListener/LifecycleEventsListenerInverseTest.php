@@ -4,7 +4,6 @@ namespace W3C\LifecycleEventsBundle\Tests\EventListener;
 
 use Doctrine\Common\Annotations\AnnotationReader;
 use Doctrine\Common\Annotations\AnnotationRegistry;
-use Doctrine\Common\Annotations\Reader;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Util\ClassUtils;
 use Doctrine\ORM\EntityManagerInterface;
@@ -13,8 +12,10 @@ use Doctrine\ORM\Event\PreUpdateEventArgs;
 use Doctrine\ORM\Mapping\ClassMetadata;
 use Doctrine\ORM\UnitOfWork;
 use PHPUnit_Framework_MockObject_MockObject as MockObject;
+use W3C\LifecycleEventsBundle\Annotation\Change;
 use W3C\LifecycleEventsBundle\Annotation\Update;
 use W3C\LifecycleEventsBundle\EventListener\LifecycleEventsListener;
+use W3C\LifecycleEventsBundle\Services\AnnotationGetter;
 use W3C\LifecycleEventsBundle\Services\LifecycleEventsDispatcher;
 use W3C\LifecycleEventsBundle\Tests\Annotation\Fixtures\Person;
 
@@ -27,11 +28,6 @@ class LifecycleEventsListenerInverseTest extends \PHPUnit_Framework_TestCase
      * @var LifecycleEventsListener
      */
     private $listener;
-
-    /**
-     * @var Reader
-     */
-    private $reader;
 
     /**
      * @var LifecycleEventsDispatcher|MockObject
@@ -71,8 +67,6 @@ class LifecycleEventsListenerInverseTest extends \PHPUnit_Framework_TestCase
 
         $loader = require __DIR__ . '/../../vendor/autoload.php';
         AnnotationRegistry::registerLoader(array($loader, 'loadClass'));
-
-        $this->reader = new AnnotationReader();
 
         $this->dispatcher = $this
             ->getMockBuilder(LifecycleEventsDispatcher::class)
@@ -189,7 +183,7 @@ class LifecycleEventsListenerInverseTest extends \PHPUnit_Framework_TestCase
                 }
             });
 
-        $this->listener = new LifecycleEventsListener($this->dispatcher, $this->reader);
+        $this->listener = new LifecycleEventsListener($this->dispatcher, new AnnotationGetter(new AnnotationReader()));
     }
 
     public function testOneToOnePostPersist()
@@ -207,8 +201,9 @@ class LifecycleEventsListenerInverseTest extends \PHPUnit_Framework_TestCase
 
         $this->dispatcher->expects($this->exactly(1))
             ->method('addUpdate')
-            ->with($this->callback(function($arg) { return $arg instanceof Update; }),
-                $this->equalTo($this->mentor),
+            ->with(
+                $this->callback(function ($arg) { return $arg instanceof Update; }),
+                $this->callback(function ($arg) { return $arg === $this->mentor; }),
                 $this->callback(function ($arg) {
                     return
                         array_keys($arg) === ['mentoring'] &&
@@ -216,6 +211,16 @@ class LifecycleEventsListenerInverseTest extends \PHPUnit_Framework_TestCase
                         $arg['mentoring']['new'] === $this->person;
                 }),
                 $this->equalTo([]));
+
+        $this->dispatcher->expects($this->exactly(1))
+            ->method('addPropertyChange')
+            ->with(
+                $this->callback(function ($arg) { return $arg instanceof Change; }),
+                $this->callback(function ($arg) { return $arg === $this->mentor; }),
+                $this->equalTo('mentoring'),
+                $this->equalTo(null),
+                $this->callback(function ($arg) { return $arg === $this->person; })
+            );
 
         $this->listener->postPersist($event);
     }
@@ -235,8 +240,9 @@ class LifecycleEventsListenerInverseTest extends \PHPUnit_Framework_TestCase
 
         $this->dispatcher->expects($this->exactly(1))
             ->method('addUpdate')
-            ->with($this->callback(function ($arg) { return $arg instanceof Update; }),
-                $this->equalTo($this->mentor),
+            ->with(
+                $this->callback(function ($arg) { return $arg instanceof Update; }),
+                $this->callback(function ($arg) { return $arg === $this->mentor; }),
                 $this->callback(function ($arg) {
                     return
                         array_keys($arg) === ['mentoring'] &&
@@ -244,6 +250,16 @@ class LifecycleEventsListenerInverseTest extends \PHPUnit_Framework_TestCase
                         $arg['mentoring']['new'] === null;
                 }),
                 $this->equalTo([]));
+
+        $this->dispatcher->expects($this->exactly(1))
+            ->method('addPropertyChange')
+            ->with(
+                $this->callback(function ($arg) { return $arg instanceof Change; }),
+                $this->callback(function ($arg) { return $arg === $this->mentor; }),
+                $this->equalTo('mentoring'),
+                $this->callback(function ($arg) { return $arg === $this->person; }),
+                $this->equalTo(null)
+            );
 
         $this->listener->preRemove($event);
     }
@@ -271,10 +287,8 @@ class LifecycleEventsListenerInverseTest extends \PHPUnit_Framework_TestCase
             ->method('addUpdate')
             ->withConsecutive(
                 [
-                    $this->callback(function ($arg) {
-                        return $arg instanceof Update;
-                    }),
-                    $this->equalTo($this->mentor),
+                    $this->callback(function ($arg) { return $arg instanceof Update; }),
+                    $this->callback(function ($arg) { return $arg === $this->mentor; }),
                     $this->callback(function ($arg) {
                         return
                             array_keys($arg) === ['mentoring'] &&
@@ -284,10 +298,8 @@ class LifecycleEventsListenerInverseTest extends \PHPUnit_Framework_TestCase
                     $this->equalTo([])
                 ],
                 [
-                    $this->callback(function ($arg) {
-                        return $arg instanceof Update;
-                    }),
-                    $this->equalTo($this->person),
+                    $this->callback(function ($arg) { return $arg instanceof Update; }),
+                    $this->callback(function ($arg) { return $arg === $this->person; }),
                     $this->callback(function ($arg) {
                         return
                             array_keys($arg) === ['mentor'] &&
@@ -297,10 +309,8 @@ class LifecycleEventsListenerInverseTest extends \PHPUnit_Framework_TestCase
                     $this->equalTo([])
                 ],
                 [
-                    $this->callback(function ($arg) {
-                        return $arg instanceof Update;
-                    }),
-                    $this->equalTo($this->mentor),
+                    $this->callback(function ($arg) { return $arg instanceof Update; }),
+                    $this->callback(function ($arg) { return $arg === $this->mentor; }),
                     $this->callback(function ($arg) {
                         return
                             array_keys($arg) === ['mentoring'] &&
@@ -310,10 +320,9 @@ class LifecycleEventsListenerInverseTest extends \PHPUnit_Framework_TestCase
                     $this->equalTo([])
                 ],
                 [
-                    $this->callback(function ($arg) {
-                        return $arg instanceof Update;
-                    }),
-                    $this->equalTo($this->person),
+                    $this->callback(function ($arg) { return $arg instanceof Update; }),
+                    $this->callback(function ($arg) { return $arg === $this->person; }),
+
                     $this->callback(function ($arg) {
                         return
                             array_keys($arg) === ['mentor'] &&
@@ -323,6 +332,26 @@ class LifecycleEventsListenerInverseTest extends \PHPUnit_Framework_TestCase
                     $this->equalTo([])
                 ]
             );
+
+        $this->dispatcher->expects($this->exactly(2))
+            ->method('addPropertyChange')
+            ->withConsecutive(
+                [
+                    $this->callback(function ($arg) { return $arg instanceof Change; }),
+                    $this->callback(function ($arg) { return $arg === $this->mentor; }),
+                    $this->equalTo('mentoring'),
+                    $this->equalTo(null),
+                    $this->callback(function ($arg) { return $arg === $this->person; })
+                ],
+                [
+                    $this->callback(function ($arg) { return $arg instanceof Change; }),
+                    $this->callback(function ($arg) { return $arg === $this->mentor; }),
+                    $this->equalTo('mentoring'),
+                    $this->callback(function ($arg) { return $arg === $this->person; }),
+                    $this->equalTo(null)
+                ]
+            )
+            ;
 
         $changeSet = ['mentor' => [null, $this->mentor]];
         $event     = new PreUpdateEventArgs($this->person, $this->manager, $changeSet);
@@ -351,10 +380,9 @@ class LifecycleEventsListenerInverseTest extends \PHPUnit_Framework_TestCase
 
         $this->dispatcher->expects($this->exactly(1))
             ->method('addUpdate')
-            ->with($this->callback(function ($arg) {
-                    return $arg instanceof Update;
-                }),
-                $this->equalTo($this->mentor),
+            ->with(
+                $this->callback(function ($arg) { return $arg instanceof Update; }),
+                $this->callback(function ($arg) { return $arg === $this->father; }),
                 $this->equalTo([]),
                 $this->callback(function ($arg) {
                     return
@@ -362,6 +390,15 @@ class LifecycleEventsListenerInverseTest extends \PHPUnit_Framework_TestCase
                         $arg['sons']['deleted'] === [] &&
                         $arg['sons']['inserted'] === [$this->person];
                 }));
+
+        $this->dispatcher->expects($this->exactly(1))
+            ->method('addCollectionChange')
+            ->with(
+                $this->callback(function ($arg) { return $arg instanceof Change; }),
+                $this->callback(function ($arg) { return $arg === $this->father; }),
+                $this->equalTo('sons'),
+                $this->equalTo([]),
+                $this->callback(function ($arg) { return $arg === [$this->person]; }));
 
         $this->listener->postPersist($event);
     }
@@ -377,14 +414,13 @@ class LifecycleEventsListenerInverseTest extends \PHPUnit_Framework_TestCase
 
         $this->classMetadata->reflFields['father']
             ->method('getValue')
-            ->willReturn($this->mentor);
+            ->willReturn($this->father);
 
         $this->dispatcher->expects($this->exactly(1))
             ->method('addUpdate')
-            ->with($this->callback(function ($arg) {
-                    return $arg instanceof Update;
-                }),
-                $this->equalTo($this->mentor),
+            ->with(
+                $this->callback(function ($arg) { return $arg instanceof Update; }),
+                $this->callback(function ($arg) { return $arg === $this->father; }),
                 $this->equalTo([]),
                 $this->callback(function ($arg) {
                     return
@@ -392,6 +428,15 @@ class LifecycleEventsListenerInverseTest extends \PHPUnit_Framework_TestCase
                         $arg['sons']['deleted'] === [$this->person] &&
                         $arg['sons']['inserted'] === [];
                 }));
+
+        $this->dispatcher->expects($this->exactly(1))
+            ->method('addCollectionChange')
+            ->with(
+                $this->callback(function ($arg) { return $arg instanceof Change; }),
+                $this->callback(function ($arg) { return $arg === $this->father; }),
+                $this->equalTo('sons'),
+                $this->callback(function ($arg) { return $arg === [$this->person]; }),
+                $this->equalTo([]));
 
         $this->listener->preRemove($event);
     }
@@ -415,10 +460,8 @@ class LifecycleEventsListenerInverseTest extends \PHPUnit_Framework_TestCase
             ->method('addUpdate')
             ->withConsecutive(
                 [
-                    $this->callback(function ($arg) {
-                        return $arg instanceof Update;
-                    }),
-                    $this->equalTo($this->father),
+                    $this->callback(function ($arg) { return $arg instanceof Update; }),
+                    $this->callback(function ($arg) { return $arg === $this->father; }),
                     $this->equalTo([]),
                     $this->callback(function ($arg) {
                         return
@@ -428,10 +471,8 @@ class LifecycleEventsListenerInverseTest extends \PHPUnit_Framework_TestCase
                     })
                 ],
                 [
-                    $this->callback(function ($arg) {
-                        return $arg instanceof Update;
-                    }),
-                    $this->equalTo($this->person),
+                    $this->callback(function ($arg) { return $arg instanceof Update; }),
+                    $this->callback(function ($arg) { return $arg === $this->person; }),
                     $this->callback(function ($arg) {
                         return
                             array_keys($arg) === ['father'] &&
@@ -441,10 +482,8 @@ class LifecycleEventsListenerInverseTest extends \PHPUnit_Framework_TestCase
                     $this->equalTo([])
                 ],
                 [
-                    $this->callback(function ($arg) {
-                        return $arg instanceof Update;
-                    }),
-                    $this->equalTo($this->father),
+                    $this->callback(function ($arg) { return $arg instanceof Update; }),
+                    $this->callback(function ($arg) { return $arg === $this->father; }),
                     $this->equalTo([]),
                     $this->callback(function ($arg) {
                         return
@@ -454,16 +493,33 @@ class LifecycleEventsListenerInverseTest extends \PHPUnit_Framework_TestCase
                     })
                 ],
                 [
-                    $this->callback(function ($arg) {
-                        return $arg instanceof Update;
-                    }),
-                    $this->equalTo($this->person),
+                    $this->callback(function ($arg) { return $arg instanceof Update; }),
+                    $this->callback(function ($arg) { return $arg === $this->person; }),
                     $this->callback(function ($arg) {
                         return
                             array_keys($arg) === ['father'] &&
                             $arg['father']['old'] === $this->father &&
                             $arg['father']['new'] === null;
                     }),
+                    $this->equalTo([])
+                ]
+            );
+
+        $this->dispatcher->expects($this->exactly(2))
+            ->method('addCollectionChange')
+            ->withConsecutive(
+                [
+                    $this->callback(function ($arg) { return $arg instanceof Change; }),
+                    $this->callback(function ($arg) { return $arg === $this->father; }),
+                    $this->equalTo('sons'),
+                    $this->equalTo([]),
+                    $this->callback(function ($arg) { return $arg === [$this->person]; })
+                ],
+                [
+                    $this->callback(function ($arg) { return $arg instanceof Change; }),
+                    $this->callback(function ($arg) { return $arg === $this->father; }),
+                    $this->equalTo('sons'),
+                    $this->callback(function ($arg) { return $arg === [$this->person]; }),
                     $this->equalTo([])
                 ]
             );
@@ -496,10 +552,8 @@ class LifecycleEventsListenerInverseTest extends \PHPUnit_Framework_TestCase
             ->method('addUpdate')
             ->withConsecutive(
                 [
-                    $this->callback(function ($arg) {
-                        return $arg instanceof Update;
-                    }),
-                    $this->equalTo($this->friend1),
+                    $this->callback(function ($arg) { return $arg instanceof Update; }),
+                    $this->callback(function ($arg) { return $arg === $this->friend1; }),
                     $this->equalTo([]),
                     $this->callback(function ($arg) {
                         return
@@ -509,10 +563,8 @@ class LifecycleEventsListenerInverseTest extends \PHPUnit_Framework_TestCase
                     })
                 ],
                 [
-                    $this->callback(function ($arg) {
-                        return $arg instanceof Update;
-                    }),
-                    $this->equalTo($this->friend2),
+                    $this->callback(function ($arg) { return $arg instanceof Update; }),
+                    $this->callback(function ($arg) { return $arg === $this->friend2; }),
                     $this->equalTo([]),
                     $this->callback(function ($arg) {
                         return
@@ -521,6 +573,25 @@ class LifecycleEventsListenerInverseTest extends \PHPUnit_Framework_TestCase
                             $arg['friendOf']['inserted'] === [$this->person];
                     })
                 ]);
+
+        $this->dispatcher->expects($this->exactly(2))
+            ->method('addCollectionChange')
+            ->withConsecutive(
+                [
+                    $this->callback(function ($arg) { return $arg instanceof Change; }),
+                    $this->callback(function ($arg) { return $arg === $this->friend1; }),
+                    $this->equalTo('friendOf'),
+                    $this->equalTo([]),
+                    $this->callback(function ($arg) { return $arg === [$this->person]; })
+                ],
+                [
+                    $this->callback(function ($arg) { return $arg instanceof Change; }),
+                    $this->callback(function ($arg) { return $arg === $this->friend2; }),
+                    $this->equalTo('friendOf'),
+                    $this->equalTo([]),
+                    $this->callback(function ($arg) { return $arg === [$this->person]; })
+                ]
+            );
 
         $this->listener->postPersist($event);
     }
@@ -542,10 +613,8 @@ class LifecycleEventsListenerInverseTest extends \PHPUnit_Framework_TestCase
             ->method('addUpdate')
             ->withConsecutive(
                 [
-                    $this->callback(function ($arg) {
-                        return $arg instanceof Update;
-                    }),
-                    $this->equalTo($this->friend1),
+                    $this->callback(function ($arg) { return $arg instanceof Update; }),
+                    $this->callback(function ($arg) { return $arg === $this->friend1; }),
                     $this->equalTo([]),
                     $this->callback(function ($arg) {
                         return
@@ -555,10 +624,8 @@ class LifecycleEventsListenerInverseTest extends \PHPUnit_Framework_TestCase
                     })
                 ],
                 [
-                    $this->callback(function ($arg) {
-                        return $arg instanceof Update;
-                    }),
-                    $this->equalTo($this->friend2),
+                    $this->callback(function ($arg) { return $arg instanceof Update; }),
+                    $this->callback(function ($arg) { return $arg === $this->friend2; }),
                     $this->equalTo([]),
                     $this->callback(function ($arg) {
                         return
@@ -567,6 +634,25 @@ class LifecycleEventsListenerInverseTest extends \PHPUnit_Framework_TestCase
                             $arg['friendOf']['inserted'] === [];
                     })
                 ]);
+
+        $this->dispatcher->expects($this->exactly(2))
+            ->method('addCollectionChange')
+            ->withConsecutive(
+                [
+                    $this->callback(function ($arg) { return $arg instanceof Change; }),
+                    $this->callback(function ($arg) { return $arg === $this->friend1; }),
+                    $this->equalTo('friendOf'),
+                    $this->callback(function ($arg) { return $arg === [$this->person]; }),
+                    $this->equalTo([])
+                ],
+                [
+                    $this->callback(function ($arg) { return $arg instanceof Change; }),
+                    $this->callback(function ($arg) { return $arg === $this->friend2; }),
+                    $this->equalTo('friendOf'),
+                    $this->callback(function ($arg) { return $arg === [$this->person]; }),
+                    $this->equalTo([])
+                ]
+            );
 
         $this->listener->preRemove($event);
     }
@@ -596,10 +682,8 @@ class LifecycleEventsListenerInverseTest extends \PHPUnit_Framework_TestCase
             ->method('addUpdate')
             ->withConsecutive(
                 [
-                    $this->callback(function ($arg) {
-                        return $arg instanceof Update;
-                    }),
-                    $this->equalTo($this->friend1),
+                    $this->callback(function ($arg) { return $arg instanceof Update; }),
+                    $this->callback(function ($arg) { return $arg === $this->friend1; }),
                     $this->equalTo([]),
                     $this->callback(function ($arg) {
                         return
@@ -609,10 +693,8 @@ class LifecycleEventsListenerInverseTest extends \PHPUnit_Framework_TestCase
                     })
                 ],
                 [
-                    $this->callback(function ($arg) {
-                        return $arg instanceof Update;
-                    }),
-                    $this->equalTo($this->friend2),
+                    $this->callback(function ($arg) { return $arg instanceof Update; }),
+                    $this->callback(function ($arg) { return $arg === $this->friend2; }),
                     $this->equalTo([]),
                     $this->callback(function ($arg) {
                         return
@@ -622,10 +704,8 @@ class LifecycleEventsListenerInverseTest extends \PHPUnit_Framework_TestCase
                     })
                 ],
                 [
-                    $this->callback(function ($arg) {
-                        return $arg instanceof Update;
-                    }),
-                    $this->equalTo($this->person),
+                    $this->callback(function ($arg) { return $arg instanceof Update; }),
+                    $this->callback(function ($arg) { return $arg === $this->person; }),
                     $this->equalTo([]),
                     $this->callback(function ($arg) {
                         return
@@ -633,6 +713,25 @@ class LifecycleEventsListenerInverseTest extends \PHPUnit_Framework_TestCase
                             $arg['friends']['deleted'] === [] &&
                             $arg['friends']['inserted'] === [$this->friend1, $this->friend2];
                     })
+                ]
+            );
+
+        $this->dispatcher->expects($this->exactly(2))
+            ->method('addCollectionChange')
+            ->withConsecutive(
+                [
+                    $this->callback(function ($arg) { return $arg instanceof Change; }),
+                    $this->callback(function ($arg) { return $arg === $this->friend1; }),
+                    $this->equalTo('friendOf'),
+                    $this->equalTo([]),
+                    $this->callback(function ($arg) { return $arg === [$this->person]; })
+                ],
+                [
+                    $this->callback(function ($arg) { return $arg instanceof Change; }),
+                    $this->callback(function ($arg) { return $arg === $this->friend2; }),
+                    $this->equalTo('friendOf'),
+                    $this->equalTo([]),
+                    $this->callback(function ($arg) { return $arg === [$this->person]; })
                 ]
             );
 
@@ -655,7 +754,7 @@ class LifecycleEventsListenerInverseTest extends \PHPUnit_Framework_TestCase
         $uow->method('getMapping')->willReturn(['fieldName' => 'friends']);
         $deleted = [$this->friend1];
         $uow->method('getDeleteDiff')->willReturn($deleted);
-        $inserted = [];
+        $inserted = [$this->friend2];
         $uow->method('getInsertDiff')->willReturn($inserted);
 
         $this->manager
@@ -663,14 +762,12 @@ class LifecycleEventsListenerInverseTest extends \PHPUnit_Framework_TestCase
             ->with(ClassUtils::getRealClass(get_class($this->person)))
             ->willReturn($this->classMetadata);
 
-        $this->dispatcher->expects($this->exactly(2))
+        $this->dispatcher->expects($this->exactly(3))
             ->method('addUpdate')
             ->withConsecutive(
                 [
-                    $this->callback(function ($arg) {
-                        return $arg instanceof Update;
-                    }),
-                    $this->equalTo($this->friend1),
+                    $this->callback(function ($arg) { return $arg instanceof Update; }),
+                    $this->callback(function ($arg) { return $arg === $this->friend1; }),
                     $this->equalTo([]),
                     $this->callback(function ($arg) {
                         return
@@ -680,17 +777,45 @@ class LifecycleEventsListenerInverseTest extends \PHPUnit_Framework_TestCase
                     })
                 ],
                 [
+                    $this->callback(function ($arg) { return $arg instanceof Update; }),
+                    $this->callback(function ($arg) { return $arg === $this->friend2; }),
+                    $this->equalTo([]),
                     $this->callback(function ($arg) {
-                        return $arg instanceof Update;
-                    }),
-                    $this->equalTo($this->person),
+                        return
+                            array_keys($arg) === ['friendOf'] &&
+                            $arg['friendOf']['deleted'] === [] &&
+                            $arg['friendOf']['inserted'] === [$this->person];
+                    })
+                ],
+                [
+                    $this->callback(function ($arg) { return $arg instanceof Update; }),
+                    $this->callback(function ($arg) { return $arg === $this->person; }),
                     $this->equalTo([]),
                     $this->callback(function ($arg) {
                         return
                             array_keys($arg) === ['friends'] &&
                             $arg['friends']['deleted'] === [$this->friend1] &&
-                            $arg['friends']['inserted'] === [];
+                            $arg['friends']['inserted'] === [$this->friend2];
                     })
+                ]
+            );
+
+        $this->dispatcher->expects($this->exactly(2))
+            ->method('addCollectionChange')
+            ->withConsecutive(
+                [
+                    $this->callback(function ($arg) { return $arg instanceof Change; }),
+                    $this->callback(function ($arg) { return $arg === $this->friend1; }),
+                    $this->equalTo('friendOf'),
+                    $this->callback(function ($arg) { return $arg === [$this->person]; }),
+                    $this->equalTo([])
+                ],
+                [
+                    $this->callback(function ($arg) { return $arg instanceof Change; }),
+                    $this->callback(function ($arg) { return $arg === $this->friend2; }),
+                    $this->equalTo('friendOf'),
+                    $this->equalTo([]),
+                    $this->callback(function ($arg) { return $arg === [$this->person]; })
                 ]
             );
 

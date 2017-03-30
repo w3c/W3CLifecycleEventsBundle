@@ -145,11 +145,16 @@ and for collections:
  */
 public function __construct($entity, $property, $deletedElements = null, $insertedElements = null)
 ```
+- `monitor_owning`: whether to record changes to this field when owning sides change (defaults to `false`). Using
+`@On\Change` on inverse side of relationships won't trigger any events unless this paramter is set to true. This
+parameter is likely to be removed in the next major version and act as if it was set to `true` since when the 
+annotation is added to the inverse side of relationship, it is obvious it means that you want changes to owning side to
+be monitored here
 
 #### `@On\IgnoreClassUpdates`
 
 This annotation is a bit different. When placed on a field (property or collection), it prevents `@On\Update` from 
-firing events related to this field. `@On\Change' ones will still work. This annotation does not allow any parameters.
+firing events related to this field. `@On\Change` ones will still work. This annotation does not allow any parameters.
 
 #### Example class
 

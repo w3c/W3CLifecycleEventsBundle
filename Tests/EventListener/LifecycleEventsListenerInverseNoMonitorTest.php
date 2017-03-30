@@ -4,7 +4,6 @@ namespace W3C\LifecycleEventsBundle\Tests\EventListener;
 
 use Doctrine\Common\Annotations\AnnotationReader;
 use Doctrine\Common\Annotations\AnnotationRegistry;
-use Doctrine\Common\Annotations\Reader;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Util\ClassUtils;
 use Doctrine\ORM\EntityManagerInterface;
@@ -15,6 +14,7 @@ use Doctrine\ORM\UnitOfWork;
 use PHPUnit_Framework_MockObject_MockObject as MockObject;
 use W3C\LifecycleEventsBundle\Annotation\Update;
 use W3C\LifecycleEventsBundle\EventListener\LifecycleEventsListener;
+use W3C\LifecycleEventsBundle\Services\AnnotationGetter;
 use W3C\LifecycleEventsBundle\Services\LifecycleEventsDispatcher;
 use W3C\LifecycleEventsBundle\Tests\Annotation\Fixtures\PersonNoMonitor;
 
@@ -27,11 +27,6 @@ class LifecycleEventsListenerInverseNoMonitorTest extends \PHPUnit_Framework_Tes
      * @var LifecycleEventsListener
      */
     private $listener;
-
-    /**
-     * @var Reader
-     */
-    private $reader;
 
     /**
      * @var LifecycleEventsDispatcher|MockObject
@@ -71,8 +66,6 @@ class LifecycleEventsListenerInverseNoMonitorTest extends \PHPUnit_Framework_Tes
 
         $loader = require __DIR__ . '/../../vendor/autoload.php';
         AnnotationRegistry::registerLoader(array($loader, 'loadClass'));
-
-        $this->reader = new AnnotationReader();
 
         $this->dispatcher = $this
             ->getMockBuilder(LifecycleEventsDispatcher::class)
@@ -189,7 +182,7 @@ class LifecycleEventsListenerInverseNoMonitorTest extends \PHPUnit_Framework_Tes
                 }
             });
 
-        $this->listener = new LifecycleEventsListener($this->dispatcher, $this->reader);
+        $this->listener = new LifecycleEventsListener($this->dispatcher, new AnnotationGetter(new AnnotationReader()));
     }
 
     public function testOneToOnePostPersist()
