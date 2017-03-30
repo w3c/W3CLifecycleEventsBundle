@@ -234,7 +234,24 @@ class LifecycleEventsDispatcher
 
     public function addUpdate(Update $annotation, $entity, array $propertyChangeSet = null, array $collectionChangeSet = null)
     {
-        $this->updates[] = [$annotation, $entity, $propertyChangeSet, $collectionChangeSet];
+        if (list($key, $update) = $this->getUpdate($entity)) {
+            $update[2] = array_merge_recursive((array)$update[2], (array)$propertyChangeSet);
+            $update[3] = array_merge_recursive((array)$update[3], (array)$collectionChangeSet);
+            $this->updates[$key] = $update;
+        } else {
+            $this->updates[] = [$annotation, $entity, $propertyChangeSet, $collectionChangeSet];
+        }
+    }
+
+    public function getUpdate($entity)
+    {
+        foreach ($this->updates as $key => $update) {
+            if ($update[1] === $entity) {
+                return [$key, $update];
+            }
+        }
+
+        return null;
     }
 
     public function getPropertyChanges()
@@ -252,9 +269,26 @@ class LifecycleEventsDispatcher
         return $this->collectionChanges;
     }
 
-    public function addCollectionChange(Change $annotation, $entity, $property, $deletedElements = null, $insertedElements = null)
+    public function addCollectionChange(Change $annotation, $entity, $property, $deletedElements = [], $insertedElements = [])
     {
-        $this->collectionChanges[] = [$annotation, $entity, $property, $deletedElements, $insertedElements];
+        if (list($key, $change) = $this->getCollectionChange($entity, $property)) {
+            $change[3] = array_merge_recursive((array)$change[3], (array)$deletedElements);
+            $change[4] = array_merge_recursive((array)$change[4], (array)$insertedElements);
+            $this->collectionChanges[$key] = $change;
+        } else {
+            $this->collectionChanges[] = [$annotation, $entity, $property, $deletedElements, $insertedElements];
+        }
+    }
+
+    public function getCollectionChange($entity, $property)
+    {
+        foreach ($this->collectionChanges as $key => $update) {
+            if ($update[1] === $entity && $update[2] === $property) {
+                return [$key, $update];
+            }
+        }
+
+        return null;
     }
 
     /**

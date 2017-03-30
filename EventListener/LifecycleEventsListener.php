@@ -2,16 +2,16 @@
 
 namespace W3C\LifecycleEventsBundle\EventListener;
 
-use Doctrine\Common\Annotations\Reader;
 use Doctrine\Common\Util\ClassUtils;
 use Doctrine\ORM\Event\LifecycleEventArgs;
 use Doctrine\ORM\Event\PreUpdateEventArgs;
-use Doctrine\ORM\Mapping\ClassMetadata;
 use Doctrine\ORM\PersistentCollection;
+use W3C\LifecycleEventsBundle\Annotation\Change;
 use W3C\LifecycleEventsBundle\Annotation\Create;
 use W3C\LifecycleEventsBundle\Annotation\Delete;
 use W3C\LifecycleEventsBundle\Annotation\IgnoreClassUpdates;
 use W3C\LifecycleEventsBundle\Annotation\Update;
+use W3C\LifecycleEventsBundle\Services\AnnotationGetter;
 use W3C\LifecycleEventsBundle\Services\LifecycleEventsDispatcher;
 
 /**
@@ -29,20 +29,20 @@ class LifecycleEventsListener
     private $dispatcher;
 
     /**
-     * @var Reader
+     * @var AnnotationGetter
      */
-    private $reader;
+    private $annotationGetter;
 
     /**
      * Constructs a new instance
      *
      * @param LifecycleEventsDispatcher $dispatcher the dispatcher to feed
-     * @param Reader $reader
+     * @param AnnotationGetter $annotationGetter
      */
-    public function __construct(LifecycleEventsDispatcher $dispatcher, Reader $reader)
+    public function __construct(LifecycleEventsDispatcher $dispatcher, AnnotationGetter $annotationGetter)
     {
-        $this->dispatcher = $dispatcher;
-        $this->reader     = $reader;
+        $this->dispatcher       = $dispatcher;
+        $this->annotationGetter = $annotationGetter;
     }
 
     /**
@@ -52,32 +52,70 @@ class LifecycleEventsListener
      */
     public function postPersist(LifecycleEventArgs $args)
     {
-        $class      = ClassUtils::getRealClass(get_class($args->getEntity()));
+        $entity = $args->getEntity();
+        $class  = ClassUtils::getRealClass(get_class($entity));
         /** @var Create $annotation */
-        $annotation = $this->getAnnotation($class, Create::class);
+        $annotation = $this->annotationGetter->getAnnotation($class, Create::class);
         if ($annotation) {
             $this->dispatcher->addCreation($annotation, $args);
         }
-    }
 
-    /**
-     * Called upon receiving postRemove events
-     *
-     * @param LifecycleEventArgs $args event to feed the dispatcher with
-     */
-    public function postRemove(LifecycleEventArgs $args)
-    {
-        $class      = ClassUtils::getRealClass(get_class($args->getEntity()));
-        /** @var Delete $annotation */
-        $annotation = $this->getAnnotation($class, Delete::class);
-        if ($annotation) {
-            $this->dispatcher->addDeletion($annotation, $args);
+        $classMetadata = $args->getEntityManager()->getClassMetadata($class);
+        foreach ($classMetadata->getAssociationMappings() as $property => $associationMapping) {
+            if (!$classMetadata->isAssociationInverseSide($property)) {
+                if ($classMetadata->isSingleValuedAssociation($property)) {
+                    $inverse = $classMetadata->reflFields[$property]->getValue($entity);
+                    $change  = ['old' => null, 'new' => $inverse];
+                    $this->propertyUpdateInverse($args, $class, $property, $change, $entity);
+                } elseif ($classMetadata->isCollectionValuedAssociation($property)) {
+                    $inverse = $classMetadata->reflFields[$property]->getValue($entity);
+                    if ($inverse) {
+                        $change = ['deleted' => [], 'inserted' => $inverse->toArray()];
+                        $this->collectionUpdateInverse($args, $class, $property, $change, $entity);
+                    }
+                }
+            }
         }
     }
 
-    public function postSoftDelete(LifecycleEventArgs $args)
+    public function preSoftDelete(LifecycleEventArgs $args)
     {
-        $this->postRemove($args);
+        $this->preRemove($args);
+    }
+
+    /**
+     * Called upon receiving preRemove events. Better than postRemove as we still have information about associated
+     * objects
+     *
+     * @param LifecycleEventArgs $args event to feed the dispatcher with
+     */
+    public function preRemove(LifecycleEventArgs $args)
+    {
+        $entity = $args->getEntity();
+        $class  = ClassUtils::getRealClass(get_class($entity));
+
+        /** @var Delete $annotation */
+        $annotation = $this->annotationGetter->getAnnotation($class, Delete::class);
+        if ($annotation) {
+            $this->dispatcher->addDeletion($annotation, $args);
+        }
+
+        $classMetadata = $args->getEntityManager()->getClassMetadata($class);
+        foreach ($classMetadata->getAssociationMappings() as $property => $associationMapping) {
+            if (!$classMetadata->isAssociationInverseSide($property)) {
+                if ($classMetadata->isSingleValuedAssociation($property)) {
+                    $inverse = $classMetadata->reflFields[$property]->getValue($entity);
+                    $change  = ['old' => $inverse, 'new' => null];
+                    $this->propertyUpdateInverse($args, $class, $property, $change, $entity);
+                } elseif ($classMetadata->isCollectionValuedAssociation($property)) {
+                    $inverse = $classMetadata->reflFields[$property]->getValue($entity);
+                    if ($inverse) {
+                        $change = ['deleted' => $inverse->toArray(), 'inserted' => []];
+                        $this->collectionUpdateInverse($args, $class, $property, $change, $entity);
+                    }
+                }
+            }
+        }
     }
 
     /**
@@ -91,13 +129,20 @@ class LifecycleEventsListener
         $class  = ClassUtils::getRealClass(get_class($entity));
 
         /** @var Update $annotation */
-        $annotation = $this->getAnnotation($class, Update::class);
+        $annotation = $this->annotationGetter->getAnnotation($class, Update::class);
+
+        // Build properties and collections changes, also take care of inverse side
+        $changeSet = $this->buildChangeSet($args, $entity);
+
+        $collectionChanges = $annotation && $annotation->monitor_collections ? $this->buildCollectionChanges($args, $entity) : [];
+
         if ($annotation) {
+            // Add changes to the entity
             $this->dispatcher->addUpdate(
                 $annotation,
                 $entity,
-                $this->buildChangeSet($args, $entity),
-                $annotation->monitor_collections ? $this->buildCollectionChanges($args, $entity) : []
+                $changeSet,
+                $collectionChanges
             );
         }
     }
@@ -125,14 +170,20 @@ class LifecycleEventsListener
                 continue;
             }
 
-            $ignoreAnnotation = $this->getIgnoreAnnotation($classMetadata, $property);
-
+            $ignoreAnnotation = $this->annotationGetter->getPropertyAnnotation(
+                $classMetadata,
+                $property,
+                IgnoreClassUpdates::class
+            );
+            $change = [
+                'deleted'  => $u->getDeleteDiff(),
+                'inserted' => $u->getInsertDiff()
+            ];
             if (!$ignoreAnnotation) {
-                $collectionsChanges[$property] = [
-                    'deleted'  => $u->getDeleteDiff(),
-                    'inserted' => $u->getInsertDiff()
-                ];
+                $collectionsChanges[$property] = $change;
             }
+
+            $this->collectionUpdateInverse($args, $realClass, $property, $change, $entity);
         }
         return $collectionsChanges;
     }
@@ -151,52 +202,222 @@ class LifecycleEventsListener
         $classMetadata = $args->getEntityManager()->getClassMetadata($realClass);
         $changes       = [];
         foreach (array_keys($args->getEntityChangeSet()) as $property) {
-            $ignoreAnnotation = $this->getIgnoreAnnotation($classMetadata, $property);
-
+            $ignoreAnnotation = $this->annotationGetter->getPropertyAnnotation(
+                $classMetadata,
+                $property,
+                IgnoreClassUpdates::class
+            );
+            $change = ['old' => $args->getOldValue($property), 'new' => $args->getNewValue($property)];
             if (!$ignoreAnnotation) {
-                $changes[$property] = ['old' => $args->getOldValue($property), 'new' => $args->getNewValue($property)];
+                $changes[$property] = $change;
+            }
+
+            if ($classMetadata->hasAssociation($property)) {
+                $this->propertyUpdateInverse($args, $realClass, $property, $change, $entity);
             }
         }
         return $changes;
     }
 
     /**
-     * @param ClassMetadata $classMetadata
-     * @param string $property
-     *
-     * @return IgnoreClassUpdates
-     * @throws \ReflectionException
+     * @param LifecycleEventArgs $args
+     * @param $class
+     * @param $property
+     * @param $change
+     * @param $entity
      */
-    private function getIgnoreAnnotation(ClassMetadata $classMetadata, $property)
+    private function collectionUpdateInverse(LifecycleEventArgs $args, $class, $property, $change, $entity)
     {
-        $reflProperty = $classMetadata->getReflectionProperty($property);
+        $em = $args->getEntityManager();
+        $classMetadata = $em->getClassMetadata($class);
 
-        if ($reflProperty) {
-            /** @var IgnoreClassUpdates $ignoreAnnotation */
-            $ignoreAnnotation = $this->reader->getPropertyAnnotation(
-                $classMetadata->getReflectionProperty($property),
-                IgnoreClassUpdates::class
-            );
-            return $ignoreAnnotation;
+        // it is indeed an association with a potential inverse side
+        if ($classMetadata->hasAssociation($property)) {
+            $mapping = $classMetadata->getAssociationMapping($property);
+            /** @var Update $targetAnnotation */
+            $targetAnnotation = $this->annotationGetter->getAnnotation($mapping['targetEntity'], Update::class);
+            $inverseMetadata = $em->getClassMetadata($mapping['targetEntity']);
+            /** @var Change $targetChangeAnnotation */
+            $targetChangeAnnotation = $this->annotationGetter->getPropertyAnnotation($inverseMetadata,
+                $mapping['inversedBy'], Change::class);
+
+            // Is there a class level monitored inverse field?
+            $inverseMonitoredGlobal = $targetAnnotation && $targetAnnotation->monitor_owning &&
+                isset($mapping['inversedBy']) &&
+                !$this->annotationGetter->getPropertyAnnotation($inverseMetadata, $mapping['inversedBy'],
+                    IgnoreClassUpdates::class);
+            // Is there a field level monitored inverse field?
+            $inverseMonitoredField = isset($mapping['inversedBy']) && $targetChangeAnnotation && $targetChangeAnnotation->monitor_owning;
+
+            foreach ($change['deleted'] as $deletion) {
+                $em->initializeObject($deletion);
+
+                if ($inverseMonitoredGlobal) {
+                    $this->dispatcher->addUpdate(
+                        $targetAnnotation,
+                        $deletion,
+                        [],
+                        [$mapping['inversedBy'] => ['deleted' => [$entity], 'inserted' => []]]
+                    );
+                }
+
+                if ($inverseMonitoredField) {
+                    $this->dispatcher->addCollectionChange(
+                        $targetChangeAnnotation,
+                        $deletion,
+                        $mapping['inversedBy'],
+                        [$entity],
+                        []
+                    );
+                }
+            }
+
+            foreach ($change['inserted'] as $insertion) {
+                $em->initializeObject($insertion);
+
+                if ($inverseMonitoredGlobal) {
+                    $this->dispatcher->addUpdate(
+                        $targetAnnotation,
+                        $insertion,
+                        [],
+                        [$mapping['inversedBy'] => ['deleted' => [], 'inserted' => [$entity]]]
+                    );
+                }
+
+                if ($inverseMonitoredField) {
+                    $this->dispatcher->addCollectionChange(
+                        $targetChangeAnnotation,
+                        $insertion,
+                        $mapping['inversedBy'],
+                        [],
+                        [$entity]
+                    );
+                }
+            }
         }
-
-        throw new \ReflectionException(
-            $classMetadata->getName() . '.' . $property . ' not found. Could this be a private field of a parent class?'
-        );
     }
 
     /**
-     * @param string $class
-     * @param string $annotationClass
-     *
-     * @return object
+     * @param LifecycleEventArgs $args
+     * @param $class
+     * @param $property
+     * @param $change
+     * @param $entity
      */
-    private function getAnnotation($class, $annotationClass)
+    private function propertyUpdateInverse(LifecycleEventArgs $args, $class, $property, $change, $entity)
     {
-        $annotation = $this->reader->getClassAnnotation(
-            new \ReflectionClass($class),
-            $annotationClass
-        );
-        return $annotation;
+        $em = $args->getEntityManager();
+        $classMetadata = $em->getClassMetadata($class);
+
+        $mapping = $classMetadata->getAssociationMapping($property);
+
+        $inverseMetadata = $em->getClassMetadata($mapping['targetEntity']);
+        /** @var Update $targetAnnotation */
+        $targetAnnotation = $this->annotationGetter->getAnnotation($mapping['targetEntity'], Update::class);
+        /** @var Change $targetChangeAnnotation */
+        $targetChangeAnnotation = $this->annotationGetter->getPropertyAnnotation($inverseMetadata,
+            $mapping['inversedBy'], Change::class);
+
+
+        // If there is a monitored inverse side, we need to add an update to both former and new owners
+        $inverseMonitoredGlobal = $targetAnnotation && $targetAnnotation->monitor_owning
+            && isset($mapping['inversedBy']) && !$this->annotationGetter->getPropertyAnnotation($inverseMetadata,
+                $mapping['inversedBy'], IgnoreClassUpdates::class);
+
+        $inverseMonitoredField = isset($mapping['inversedBy']) && $targetChangeAnnotation && $targetChangeAnnotation->monitor_owning;
+
+        // Inverse side is also single-valued (one-to-one)
+        if ($inverseMetadata->isSingleValuedAssociation($mapping['inversedBy'])) {
+            if (isset($change['old'])) {
+                $em->initializeObject($change['old']);
+
+                if ($inverseMonitoredGlobal) {
+                    $this->dispatcher->addUpdate(
+                        $targetAnnotation,
+                        $change['old'],
+                        [$mapping['inversedBy'] => ['old' => $entity, 'new' => null]],
+                        []
+                    );
+                }
+
+                if ($inverseMonitoredField) {
+                    $this->dispatcher->addPropertyChange(
+                        $targetChangeAnnotation,
+                        $change['old'],
+                        $mapping['inversedBy'],
+                        $entity,
+                        null
+                    );
+                }
+            }
+            if (isset($change['new'])) {
+                $em->initializeObject($change['new']);
+
+                if ($inverseMonitoredGlobal) {
+                    $this->dispatcher->addUpdate(
+                        $targetAnnotation,
+                        $change['new'],
+                        [$mapping['inversedBy'] => ['old' => null, 'new' => $entity]],
+                        []
+                    );
+                }
+
+                if ($inverseMonitoredField) {
+                    $this->dispatcher->addPropertyChange(
+                        $targetChangeAnnotation,
+                        $change['new'],
+                        $mapping['inversedBy'],
+                        null,
+                        $entity
+                    );
+                }
+            }
+        } // Inverse side is multi-valued (one-to-many)
+        elseif ($inverseMetadata->isCollectionValuedAssociation($mapping['inversedBy'])) {
+            if (isset($change['old']) && $change['old']) {
+                $em->initializeObject($change['old']);
+
+                if ($inverseMonitoredGlobal) {
+                    $this->dispatcher->addUpdate(
+                        $targetAnnotation,
+                        $change['old'],
+                        [],
+                        [$mapping['inversedBy'] => ['deleted' => [$entity], 'inserted' => []]]
+                    );
+                }
+
+                if ($inverseMonitoredField) {
+                    $this->dispatcher->addCollectionChange(
+                        $targetChangeAnnotation,
+                        $change['old'],
+                        $mapping['inversedBy'],
+                        [$entity],
+                        []
+                    );
+                }
+            }
+            if (isset($change['new']) && $change['new']) {
+                $em->initializeObject($change['new']);
+
+                if ($inverseMonitoredGlobal) {
+                    $this->dispatcher->addUpdate(
+                        $targetAnnotation,
+                        $change['new'],
+                        [],
+                        [$mapping['inversedBy'] => ['deleted' => [], 'inserted' => [$entity]]]
+                    );
+                }
+
+                if ($inverseMonitoredField) {
+                    $this->dispatcher->addCollectionChange(
+                        $targetChangeAnnotation,
+                        $change['new'],
+                        $mapping['inversedBy'],
+                        [],
+                        [$entity]
+                    );
+                }
+            }
+        }
     }
 }

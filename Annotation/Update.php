@@ -27,4 +27,6 @@ class Update
      * @var bool
      */
     public $monitor_collections = true;
+
+    public $monitor_owning = false;
 }

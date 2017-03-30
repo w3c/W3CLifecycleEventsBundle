@@ -23,4 +23,9 @@ class Change
      */
     public $class = LifecyclePropertyChangedEvent::class;
 
+    /**
+     * @var bool
+     * @deprecated to be removed in next major version and the class will always act as if it was set to true
+     */
+    public $monitor_owning = false;
 }
