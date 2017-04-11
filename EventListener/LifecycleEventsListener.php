@@ -3,6 +3,7 @@
 namespace W3C\LifecycleEventsBundle\EventListener;
 
 use Doctrine\Common\Util\ClassUtils;
+use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\Event\LifecycleEventArgs;
 use Doctrine\ORM\Event\PreUpdateEventArgs;
 use Doctrine\ORM\PersistentCollection;
@@ -234,65 +235,13 @@ class LifecycleEventsListener
         // it is indeed an association with a potential inverse side
         if ($classMetadata->hasAssociation($property)) {
             $mapping = $classMetadata->getAssociationMapping($property);
-            /** @var Update $targetAnnotation */
-            $targetAnnotation = $this->annotationGetter->getAnnotation($mapping['targetEntity'], Update::class);
-            $inverseMetadata = $em->getClassMetadata($mapping['targetEntity']);
-            /** @var Change $targetChangeAnnotation */
-            $targetChangeAnnotation = $this->annotationGetter->getPropertyAnnotation($inverseMetadata,
-                $mapping['inversedBy'], Change::class);
-
-            // Is there a class level monitored inverse field?
-            $inverseMonitoredGlobal = $targetAnnotation && $targetAnnotation->monitor_owning &&
-                isset($mapping['inversedBy']) &&
-                !$this->annotationGetter->getPropertyAnnotation($inverseMetadata, $mapping['inversedBy'],
-                    IgnoreClassUpdates::class);
-            // Is there a field level monitored inverse field?
-            $inverseMonitoredField = isset($mapping['inversedBy']) && $targetChangeAnnotation && $targetChangeAnnotation->monitor_owning;
 
             foreach ($change['deleted'] as $deletion) {
-                $em->initializeObject($deletion);
-
-                if ($inverseMonitoredGlobal) {
-                    $this->dispatcher->addUpdate(
-                        $targetAnnotation,
-                        $deletion,
-                        [],
-                        [$mapping['inversedBy'] => ['deleted' => [$entity], 'inserted' => []]]
-                    );
-                }
-
-                if ($inverseMonitoredField) {
-                    $this->dispatcher->addCollectionChange(
-                        $targetChangeAnnotation,
-                        $deletion,
-                        $mapping['inversedBy'],
-                        [$entity],
-                        []
-                    );
-                }
+                $this->updateDeletedInverse($deletion, $entity, $em, $mapping);
             }
 
             foreach ($change['inserted'] as $insertion) {
-                $em->initializeObject($insertion);
-
-                if ($inverseMonitoredGlobal) {
-                    $this->dispatcher->addUpdate(
-                        $targetAnnotation,
-                        $insertion,
-                        [],
-                        [$mapping['inversedBy'] => ['deleted' => [], 'inserted' => [$entity]]]
-                    );
-                }
-
-                if ($inverseMonitoredField) {
-                    $this->dispatcher->addCollectionChange(
-                        $targetChangeAnnotation,
-                        $insertion,
-                        $mapping['inversedBy'],
-                        [],
-                        [$entity]
-                    );
-                }
+                $this->updateInsertedInverse($insertion, $entity, $em, $mapping);
             }
         }
     }
@@ -311,113 +260,226 @@ class LifecycleEventsListener
 
         $mapping = $classMetadata->getAssociationMapping($property);
 
-        $inverseMetadata = $em->getClassMetadata($mapping['targetEntity']);
-        /** @var Update $targetAnnotation */
-        $targetAnnotation = $this->annotationGetter->getAnnotation($mapping['targetEntity'], Update::class);
-        /** @var Change $targetChangeAnnotation */
-        $targetChangeAnnotation = $this->annotationGetter->getPropertyAnnotation($inverseMetadata,
-            $mapping['inversedBy'], Change::class);
+        if (isset($change['new']) && $change['new']) {
+            $newInverseMetadata = $em->getClassMetadata(ClassUtils::getRealClass(get_class($change['new'])));
+        } else {
+            $newInverseMetadata = $em->getClassMetadata($mapping['targetEntity']);
+        }
 
+        if (isset($change['old']) && $change['old']) {
+            $oldInverseMetadata = $em->getClassMetadata(ClassUtils::getRealClass(get_class($change['old'])));
+        } else {
+            $oldInverseMetadata = $em->getClassMetadata($mapping['targetEntity']);
+        }
 
-        // If there is a monitored inverse side, we need to add an update to both former and new owners
-        $inverseMonitoredGlobal = $targetAnnotation && $targetAnnotation->monitor_owning
-            && isset($mapping['inversedBy']) && !$this->annotationGetter->getPropertyAnnotation($inverseMetadata,
-                $mapping['inversedBy'], IgnoreClassUpdates::class);
+        // Inverse side should always be similar for old and new entities, but in case that's not the case (because of
+        // some weird inheritance, we consider old and new metadata
 
-        $inverseMonitoredField = isset($mapping['inversedBy']) && $targetChangeAnnotation && $targetChangeAnnotation->monitor_owning;
+        // Old Inverse side is also single-valued (one-to-one)
+        if ($oldInverseMetadata->isSingleValuedAssociation($mapping['inversedBy'])) {
+            $this->updateOldInverse($change['old'], $entity, $em,$mapping);
+        } // Old Inverse side is multi-valued (one-to-many)
+        elseif ($oldInverseMetadata->isCollectionValuedAssociation($mapping['inversedBy'])) {
+            $this->updateDeletedInverse($change['old'], $entity, $em,$mapping);
+        }
 
-        // Inverse side is also single-valued (one-to-one)
-        if ($inverseMetadata->isSingleValuedAssociation($mapping['inversedBy'])) {
-            if (isset($change['old'])) {
-                $em->initializeObject($change['old']);
+        // New Inverse side is also single-valued (one-to-one)
+        if ($newInverseMetadata->isSingleValuedAssociation($mapping['inversedBy'])) {
+            $this->updateNewInverse($change['new'], $entity, $em, $mapping);
+        } // New Inverse side is multi-valued (one-to-many)
+        elseif ($newInverseMetadata->isCollectionValuedAssociation($mapping['inversedBy'])) {
+            $this->updateInsertedInverse($change['new'], $entity, $em, $mapping);
+        }
+    }
 
-                if ($inverseMonitoredGlobal) {
-                    $this->dispatcher->addUpdate(
-                        $targetAnnotation,
-                        $change['old'],
-                        [$mapping['inversedBy'] => ['old' => $entity, 'new' => null]],
-                        []
-                    );
-                }
+    /**
+     * @param $oldEntity
+     * @param $owningEntity
+     * @param EntityManagerInterface $em
+     * @param $mapping
+     */
+    private function updateOldInverse(
+        $oldEntity,
+        $owningEntity,
+        EntityManagerInterface $em,
+        $mapping
+    ) {
+        $inverseField = isset($mapping['inversedBy']) ? $mapping['inversedBy'] : null;
+        if ($inverseField && $oldEntity) {
+            $oldClass = ClassUtils::getRealClass(get_class($oldEntity));
+            $inverseMetadata = $em->getClassMetadata($oldClass);
 
-                if ($inverseMonitoredField) {
-                    $this->dispatcher->addPropertyChange(
-                        $targetChangeAnnotation,
-                        $change['old'],
-                        $mapping['inversedBy'],
-                        $entity,
-                        null
-                    );
-                }
+            /** @var Update $targetAnnotation */
+            $targetAnnotation = $this->annotationGetter->getAnnotation($oldClass, Update::class);
+            /** @var Change $targetChangeAnnotation */
+            $targetChangeAnnotation = $this->annotationGetter->getPropertyAnnotation($inverseMetadata,
+                $inverseField, Change::class);
+
+            $inverseMonitoredGlobal = $targetAnnotation && $targetAnnotation->monitor_owning
+                && !$this->annotationGetter->getPropertyAnnotation($inverseMetadata,
+                    $inverseField, IgnoreClassUpdates::class);
+
+            $inverseMonitoredField = $inverseField && $targetChangeAnnotation && $targetChangeAnnotation->monitor_owning;
+
+            $em->initializeObject($oldEntity);
+
+            if ($inverseMonitoredGlobal) {
+                $this->dispatcher->addUpdate(
+                    $targetAnnotation,
+                    $oldEntity,
+                    [$inverseField => ['old' => $owningEntity, 'new' => null]],
+                    []
+                );
             }
-            if (isset($change['new'])) {
-                $em->initializeObject($change['new']);
 
-                if ($inverseMonitoredGlobal) {
-                    $this->dispatcher->addUpdate(
-                        $targetAnnotation,
-                        $change['new'],
-                        [$mapping['inversedBy'] => ['old' => null, 'new' => $entity]],
-                        []
-                    );
-                }
-
-                if ($inverseMonitoredField) {
-                    $this->dispatcher->addPropertyChange(
-                        $targetChangeAnnotation,
-                        $change['new'],
-                        $mapping['inversedBy'],
-                        null,
-                        $entity
-                    );
-                }
-            }
-        } // Inverse side is multi-valued (one-to-many)
-        elseif ($inverseMetadata->isCollectionValuedAssociation($mapping['inversedBy'])) {
-            if (isset($change['old']) && $change['old']) {
-                $em->initializeObject($change['old']);
-
-                if ($inverseMonitoredGlobal) {
-                    $this->dispatcher->addUpdate(
-                        $targetAnnotation,
-                        $change['old'],
-                        [],
-                        [$mapping['inversedBy'] => ['deleted' => [$entity], 'inserted' => []]]
-                    );
-                }
-
-                if ($inverseMonitoredField) {
-                    $this->dispatcher->addCollectionChange(
-                        $targetChangeAnnotation,
-                        $change['old'],
-                        $mapping['inversedBy'],
-                        [$entity],
-                        []
-                    );
-                }
-            }
-            if (isset($change['new']) && $change['new']) {
-                $em->initializeObject($change['new']);
-
-                if ($inverseMonitoredGlobal) {
-                    $this->dispatcher->addUpdate(
-                        $targetAnnotation,
-                        $change['new'],
-                        [],
-                        [$mapping['inversedBy'] => ['deleted' => [], 'inserted' => [$entity]]]
-                    );
-                }
-
-                if ($inverseMonitoredField) {
-                    $this->dispatcher->addCollectionChange(
-                        $targetChangeAnnotation,
-                        $change['new'],
-                        $mapping['inversedBy'],
-                        [],
-                        [$entity]
-                    );
-                }
+            if ($inverseMonitoredField) {
+                $this->dispatcher->addPropertyChange(
+                    $targetChangeAnnotation,
+                    $oldEntity,
+                    $mapping['inversedBy'],
+                    $owningEntity,
+                    null
+                );
             }
         }
     }
+
+    private function updateNewInverse(
+        $newEntity,
+        $owningEntity,
+        EntityManagerInterface $em,
+        $mapping
+    ) {
+        $inverseField = isset($mapping['inversedBy']) ? $mapping['inversedBy'] : null;
+        if ($inverseField && $newEntity) {
+            $newClass        = ClassUtils::getRealClass(get_class($newEntity));
+            $inverseMetadata = $em->getClassMetadata($newClass);
+
+            /** @var Update $targetAnnotation */
+            $targetAnnotation = $this->annotationGetter->getAnnotation($newClass, Update::class);
+            /** @var Change $targetChangeAnnotation */
+            $targetChangeAnnotation = $this->annotationGetter->getPropertyAnnotation($inverseMetadata,
+                $inverseField, Change::class);
+
+            $inverseMonitoredGlobal = $targetAnnotation && $targetAnnotation->monitor_owning
+                && !$this->annotationGetter->getPropertyAnnotation($inverseMetadata,
+                    $inverseField, IgnoreClassUpdates::class);
+
+            $inverseMonitoredField = $inverseField && $targetChangeAnnotation && $targetChangeAnnotation->monitor_owning;
+
+            $em->initializeObject($newEntity);
+
+            if ($inverseMonitoredGlobal) {
+                $this->dispatcher->addUpdate(
+                    $targetAnnotation,
+                    $newEntity,
+                    [$inverseField => ['old' => null, 'new' => $owningEntity]],
+                    []
+                );
+            }
+
+            if ($inverseMonitoredField) {
+                $this->dispatcher->addPropertyChange(
+                    $targetChangeAnnotation,
+                    $newEntity,
+                    $mapping['inversedBy'],
+                    null,
+                    $owningEntity
+                );
+            }
+        }
+    }
+
+    private function updateDeletedInverse(
+        $deletedEntity,
+        $owningEntity,
+        EntityManagerInterface $em,
+        $mapping
+    ) {
+        $inverseField = isset($mapping['inversedBy']) ? $mapping['inversedBy'] : null;
+        if ($inverseField && $deletedEntity) {
+            $deletedClass    = ClassUtils::getRealClass(get_class($deletedEntity));
+            $inverseMetadata = $em->getClassMetadata($deletedClass);
+
+            /** @var Update $targetAnnotation */
+            $targetAnnotation = $this->annotationGetter->getAnnotation($deletedClass, Update::class);
+            /** @var Change $targetChangeAnnotation */
+            $targetChangeAnnotation = $this->annotationGetter->getPropertyAnnotation($inverseMetadata,
+                $inverseField, Change::class);
+
+            $inverseMonitoredGlobal = $targetAnnotation && $targetAnnotation->monitor_owning
+                && !$this->annotationGetter->getPropertyAnnotation($inverseMetadata,
+                    $inverseField, IgnoreClassUpdates::class);
+
+            $inverseMonitoredField = $inverseField && $targetChangeAnnotation && $targetChangeAnnotation->monitor_owning;
+
+            $em->initializeObject($deletedEntity);
+
+            if ($inverseMonitoredGlobal) {
+                $this->dispatcher->addUpdate(
+                    $targetAnnotation,
+                    $deletedEntity,
+                    [],
+                    [$mapping['inversedBy'] => ['deleted' => [$owningEntity], 'inserted' => []]]
+                );
+            }
+
+            if ($inverseMonitoredField) {
+                $this->dispatcher->addCollectionChange(
+                    $targetChangeAnnotation,
+                    $deletedEntity,
+                    $mapping['inversedBy'],
+                    [$owningEntity],
+                    []
+                );
+            }
+        }
+    }
+
+    private function updateInsertedInverse(
+        $insertedEntity,
+        $owningEntity,
+        EntityManagerInterface $em,
+        $mapping
+    ) {
+        $inverseField = isset($mapping['inversedBy']) ? $mapping['inversedBy'] : null;
+        if ($inverseField && $insertedEntity) {
+            $deletedClass    = ClassUtils::getRealClass(get_class($insertedEntity));
+            $inverseMetadata = $em->getClassMetadata($deletedClass);
+
+            /** @var Update $targetAnnotation */
+            $targetAnnotation = $this->annotationGetter->getAnnotation($deletedClass, Update::class);
+            /** @var Change $targetChangeAnnotation */
+            $targetChangeAnnotation = $this->annotationGetter->getPropertyAnnotation($inverseMetadata,
+                $inverseField, Change::class);
+
+            $inverseMonitoredGlobal = $targetAnnotation && $targetAnnotation->monitor_owning
+                && !$this->annotationGetter->getPropertyAnnotation($inverseMetadata,
+                    $inverseField, IgnoreClassUpdates::class);
+
+            $inverseMonitoredField = $inverseField && $targetChangeAnnotation && $targetChangeAnnotation->monitor_owning;
+
+            $em->initializeObject($insertedEntity);
+
+            if ($inverseMonitoredGlobal) {
+                $this->dispatcher->addUpdate(
+                    $targetAnnotation,
+                    $insertedEntity,
+                    [],
+                    [$mapping['inversedBy'] => ['deleted' => [], 'inserted' => [$owningEntity]]]
+                );
+            }
+
+            if ($inverseMonitoredField) {
+                $this->dispatcher->addCollectionChange(
+                    $targetChangeAnnotation,
+                    $insertedEntity,
+                    $mapping['inversedBy'],
+                    [],
+                    [$owningEntity]
+                );
+            }
+        }
+    }
+
 }
