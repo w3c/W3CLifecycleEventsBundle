@@ -3,7 +3,6 @@
 namespace W3C\LifecycleEventsBundle\EventListener;
 
 use Doctrine\Common\Util\ClassUtils;
-use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\Event\LifecycleEventArgs;
 use Doctrine\ORM\Event\PreUpdateEventArgs;
 use Doctrine\ORM\PersistentCollection;
@@ -237,11 +236,11 @@ class LifecycleEventsListener
             $mapping = $classMetadata->getAssociationMapping($property);
 
             foreach ($change['deleted'] as $deletion) {
-                $this->updateDeletedInverse($deletion, $entity, $em, $mapping);
+                $this->updateDeletedInverse($deletion, $entity, $args, $mapping);
             }
 
             foreach ($change['inserted'] as $insertion) {
-                $this->updateInsertedInverse($insertion, $entity, $em, $mapping);
+                $this->updateInsertedInverse($insertion, $entity, $args, $mapping);
             }
         }
     }
@@ -277,35 +276,37 @@ class LifecycleEventsListener
 
         // Old Inverse side is also single-valued (one-to-one)
         if ($oldInverseMetadata->isSingleValuedAssociation($mapping['inversedBy'])) {
-            $this->updateOldInverse($change['old'], $entity, $em,$mapping);
+            $this->updateOldInverse($change['old'], $entity, $args,$mapping);
         } // Old Inverse side is multi-valued (one-to-many)
         elseif ($oldInverseMetadata->isCollectionValuedAssociation($mapping['inversedBy'])) {
-            $this->updateDeletedInverse($change['old'], $entity, $em,$mapping);
+            $this->updateDeletedInverse($change['old'], $entity, $args,$mapping);
         }
 
         // New Inverse side is also single-valued (one-to-one)
         if ($newInverseMetadata->isSingleValuedAssociation($mapping['inversedBy'])) {
-            $this->updateNewInverse($change['new'], $entity, $em, $mapping);
+            $this->updateNewInverse($change['new'], $entity, $args, $mapping);
         } // New Inverse side is multi-valued (one-to-many)
         elseif ($newInverseMetadata->isCollectionValuedAssociation($mapping['inversedBy'])) {
-            $this->updateInsertedInverse($change['new'], $entity, $em, $mapping);
+            $this->updateInsertedInverse($change['new'], $entity, $args, $mapping);
         }
     }
 
     /**
      * @param $oldEntity
      * @param $owningEntity
-     * @param EntityManagerInterface $em
+     * @param LifecycleEventArgs $args
      * @param $mapping
      */
     private function updateOldInverse(
         $oldEntity,
         $owningEntity,
-        EntityManagerInterface $em,
+        LifecycleEventArgs $args,
         $mapping
     ) {
         $inverseField = isset($mapping['inversedBy']) ? $mapping['inversedBy'] : null;
         if ($inverseField && $oldEntity) {
+            $em = $args->getEntityManager();
+
             $oldClass = ClassUtils::getRealClass(get_class($oldEntity));
             $inverseMetadata = $em->getClassMetadata($oldClass);
 
@@ -347,11 +348,13 @@ class LifecycleEventsListener
     private function updateNewInverse(
         $newEntity,
         $owningEntity,
-        EntityManagerInterface $em,
+        LifecycleEventArgs $args,
         $mapping
     ) {
         $inverseField = isset($mapping['inversedBy']) ? $mapping['inversedBy'] : null;
         if ($inverseField && $newEntity) {
+            $em = $args->getEntityManager();
+
             $newClass        = ClassUtils::getRealClass(get_class($newEntity));
             $inverseMetadata = $em->getClassMetadata($newClass);
 
@@ -393,11 +396,13 @@ class LifecycleEventsListener
     private function updateDeletedInverse(
         $deletedEntity,
         $owningEntity,
-        EntityManagerInterface $em,
+        LifecycleEventArgs $args,
         $mapping
     ) {
         $inverseField = isset($mapping['inversedBy']) ? $mapping['inversedBy'] : null;
         if ($inverseField && $deletedEntity) {
+            $em = $args->getEntityManager();
+
             $deletedClass    = ClassUtils::getRealClass(get_class($deletedEntity));
             $inverseMetadata = $em->getClassMetadata($deletedClass);
 
@@ -439,11 +444,13 @@ class LifecycleEventsListener
     private function updateInsertedInverse(
         $insertedEntity,
         $owningEntity,
-        EntityManagerInterface $em,
+        LifecycleEventArgs $args,
         $mapping
     ) {
         $inverseField = isset($mapping['inversedBy']) ? $mapping['inversedBy'] : null;
         if ($inverseField && $insertedEntity) {
+            $em = $args->getEntityManager();
+
             $deletedClass    = ClassUtils::getRealClass(get_class($insertedEntity));
             $inverseMetadata = $em->getClassMetadata($deletedClass);
 
