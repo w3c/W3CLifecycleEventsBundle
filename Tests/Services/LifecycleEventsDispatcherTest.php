@@ -5,7 +5,9 @@ namespace W3C\LifecycleEventsBundle\Tests\Services;
 use Doctrine\Common\Persistence\Event\LifecycleEventArgs;
 use Doctrine\Common\Persistence\ObjectManager;
 use Doctrine\ORM\Mapping\ClassMetadata;
+use W3C\LifecycleEventsBundle\Tests\Services\Fixtures\MySubscriber;
 use PHPUnit\Framework\TestCase;
+use Symfony\Component\EventDispatcher\EventDispatcher;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use W3C\LifecycleEventsBundle\Annotation\Change;
 use W3C\LifecycleEventsBundle\Annotation\Create;
@@ -56,8 +58,8 @@ class LifecycleEventsDispatcherTest extends TestCase
         parent::setUp();
 
         $this->sfDispatcher = $this
-            ->getMockBuilder(EventDispatcherInterface::class)
-            ->disableOriginalConstructor()
+            ->getMockBuilder(EventDispatcher::class)
+            ->enableProxyingToOriginalMethods()
             ->getMock();
         ;
         $this->dispatcher = new LifecycleEventsDispatcher($this->sfDispatcher, true);
@@ -81,10 +83,34 @@ class LifecycleEventsDispatcherTest extends TestCase
         $this->assertCount(1, $this->dispatcher->getCreations());
 
         $expectedEvent = new LifecycleEvent($user);
+
         $this->sfDispatcher->expects($this->once())
             ->method('dispatch')
             ->with(LifecycleEvents::CREATED, $expectedEvent)
         ;
+
+        $this->dispatcher->dispatchEvents();
+    }
+
+    /**
+     * Test that if dispatchEvents is called recursively (could happen if flush happens in a listener),
+     * events already fired aren't a second time.
+     */
+    public function testDispatchCreationEventsRecursive()
+    {
+        $user       = new User();
+        $annotation = new Create();
+        $args       = new LifecycleEventArgs($user, $this->objectManager);
+
+        $this->sfDispatcher->addSubscriber(new MySubscriber($this->dispatcher, $annotation, $args));
+
+        $this->dispatcher->addCreation($annotation, $args);
+
+        $this->assertCount(1, $this->dispatcher->getCreations());
+
+        // 2 === 1 addCreation above + 1 in MySubscriber::onCalled
+        $this->sfDispatcher->expects($this->exactly(2))
+            ->method('dispatch');
 
         $this->dispatcher->dispatchEvents();
     }
@@ -131,6 +157,37 @@ class LifecycleEventsDispatcherTest extends TestCase
         $this->sfDispatcher->expects($this->once())
             ->method('dispatch')
             ->with(LifecycleEvents::DELETED, $expectedEvent);
+
+        $this->dispatcher->dispatchEvents();
+    }
+
+    /**
+     * Test that if dispatchEvents is called recursively (could happen if flush happens in a listener),
+     * events already fired aren't a second time.
+     */
+    public function testDispatchDeletionEventsRecursive()
+    {
+        $user       = new User();
+        $annotation = new Delete();
+        $args       = new LifecycleEventArgs($user, $this->objectManager);
+
+        $this->sfDispatcher->addSubscriber(new MySubscriber($this->dispatcher, $annotation, $args));
+
+        $this->objectManager->method('getClassMetadata')->willReturn($this->classMetadata);
+        $this->classMetadata->expects($this->once())
+            ->method('getIdentifierFieldNames')
+            ->willReturn(['name']);
+        $this->classMetadata->expects($this->once())
+            ->method('getIdentifierValues')
+            ->willReturn(['toto']);
+
+        $this->dispatcher->addDeletion($annotation, $args);
+
+        $this->assertCount(1, $this->dispatcher->getDeletions());
+
+        // 2 === 1 addDeletion above + 1 addCreation in MySubscriber::onCalled
+        $this->sfDispatcher->expects($this->exactly(2))
+            ->method('dispatch');
 
         $this->dispatcher->dispatchEvents();
     }
@@ -185,6 +242,34 @@ class LifecycleEventsDispatcherTest extends TestCase
         $this->dispatcher->dispatchEvents();
     }
 
+    /**
+     * Test that if dispatchEvents is called recursively (could happen if flush happens in a listener),
+     * events already fired aren't a second time.
+     */
+    public function testDispatchUpdatesEventsRecursive()
+    {
+        $user       = new User();
+        $annotation = new Update();
+        $args       = new LifecycleEventArgs($user, $this->objectManager);
+
+        $this->sfDispatcher->addSubscriber(new MySubscriber($this->dispatcher, $annotation, $args));
+
+        $this->dispatcher->addUpdate(
+            $annotation,
+            $user,
+            ['name' => ['foo', 'bar']],
+            []
+        );
+
+        $this->assertCount(1, $this->dispatcher->getUpdates());
+
+        // 2 === 1 addUpdate above + 1 addCreation in MySubscriber::onCalled
+        $this->sfDispatcher->expects($this->exactly(2))
+            ->method('dispatch');
+
+        $this->dispatcher->dispatchEvents();
+    }
+
     public function testDispatchUpdatesEventsCustom()
     {
         $user       = new User();
@@ -227,6 +312,35 @@ class LifecycleEventsDispatcherTest extends TestCase
         $this->sfDispatcher->expects($this->once())
             ->method('dispatch')
             ->with(LifecycleEvents::PROPERTY_CHANGED, $expectedEvent);
+
+        $this->dispatcher->dispatchEvents();
+    }
+
+    /**
+     * Test that if dispatchEvents is called recursively (could happen if flush happens in a listener),
+     * events already fired aren't a second time.
+     */
+    public function testDispatchPropertyChangeEventsRecursive()
+    {
+        $user       = new User();
+        $annotation = new Change();
+        $args       = new LifecycleEventArgs($user, $this->objectManager);
+
+        $this->sfDispatcher->addSubscriber(new MySubscriber($this->dispatcher, $annotation, $args));
+
+        $this->dispatcher->addPropertyChange(
+            $annotation,
+            $user,
+            'name',
+            'foo',
+            'bar'
+        );
+
+        $this->assertCount(1, $this->dispatcher->getPropertyChanges());
+
+        // 2 === 1 addPropertyChange above + 1 addCreation in MySubscriber::onCalled
+        $this->sfDispatcher->expects($this->exactly(2))
+            ->method('dispatch');
 
         $this->dispatcher->dispatchEvents();
     }
@@ -275,6 +389,37 @@ class LifecycleEventsDispatcherTest extends TestCase
         $this->sfDispatcher->expects($this->once())
             ->method('dispatch')
             ->with(LifecycleEvents::COLLECTION_CHANGED, $expectedEvent);
+
+        $this->dispatcher->dispatchEvents();
+    }
+
+    /**
+     * Test that if dispatchEvents is called recursively (could happen if flush happens in a listener),
+     * events already fired aren't a second time.
+     */
+    public function testDispatchCollectionChangeEventsRecursive()
+    {
+        $user       = new User();
+        $annotation = new Change();
+        $args       = new LifecycleEventArgs($user, $this->objectManager);
+
+        $this->sfDispatcher->addSubscriber(new MySubscriber($this->dispatcher, $annotation, $args));
+
+        $deleted  = [new User()];
+        $inserted = [new User(), new User()];
+        $this->dispatcher->addCollectionChange(
+            $annotation,
+            $user,
+            'friends',
+            $deleted,
+            $inserted
+        );
+
+        $this->assertCount(1, $this->dispatcher->getCollectionChanges());
+
+        // 2 === 1 addCollectionChange above + 1 addCreation in MySubscriber::onCalled
+        $this->sfDispatcher->expects($this->exactly(2))
+            ->method('dispatch');
 
         $this->dispatcher->dispatchEvents();
     }
