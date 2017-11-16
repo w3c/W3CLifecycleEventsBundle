@@ -229,12 +229,25 @@ Lifecycle events are dispatched by default after a successful flush. If needed, 
 w3_c_lifecycle_events:
     auto_dispatch:        false
 ```
-- temporarily in a container:
+- temporarily in a container (before Symfony 4):
 
 ``` php
 <?php
 $dispatcher = $this->container->get("w3c_lifecycle_events.dispatcher");
 $dispatcher->setAutoDispatch(false);
+```
+
+- temporarily in a container (since Symfony 4):
+
+``` php
+<?php
+use W3C\LifecycleEventsBundle\Services\LifecycleEventsDispatcher;
+public function testAction(LifecycleEventsDispatcher $dispatcher)
+{
+    [...]
+    $dispatcher->setAutoDispatch(false);
+    [...]
+}
 ```
 
 Events can then be dispatched manually using the following:
