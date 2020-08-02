@@ -2,8 +2,8 @@
 
 namespace W3C\LifecycleEventsBundle\Tests\Services;
 
-use Doctrine\Common\Persistence\Event\LifecycleEventArgs;
-use Doctrine\Common\Persistence\ObjectManager;
+use Doctrine\Persistence\Event\LifecycleEventArgs;
+use Doctrine\Persistence\ObjectManager;
 use Doctrine\ORM\Mapping\ClassMetadata;
 use W3C\LifecycleEventsBundle\Tests\Services\Fixtures\MySubscriber;
 use PHPUnit\Framework\TestCase;
@@ -53,7 +53,7 @@ class LifecycleEventsDispatcherTest extends TestCase
      */
     private $classMetadata;
 
-    public function setUp()
+    public function setUp() : void
     {
         parent::setUp();
 
@@ -86,7 +86,7 @@ class LifecycleEventsDispatcherTest extends TestCase
 
         $this->sfDispatcher->expects($this->once())
             ->method('dispatch')
-            ->with(LifecycleEvents::CREATED, $expectedEvent)
+            ->with($expectedEvent, LifecycleEvents::CREATED)
         ;
 
         $this->dispatcher->dispatchEvents();
@@ -130,7 +130,7 @@ class LifecycleEventsDispatcherTest extends TestCase
         $expectedEvent = new $annotation->class($user);
         $this->sfDispatcher->expects($this->once())
             ->method('dispatch')
-            ->with($annotation->event, $expectedEvent);
+            ->with($expectedEvent, $annotation->event);
 
         $this->dispatcher->dispatchEvents();
     }
@@ -156,7 +156,7 @@ class LifecycleEventsDispatcherTest extends TestCase
         $expectedEvent = new LifecycleDeletionEvent($user, ['name' => 'toto']);
         $this->sfDispatcher->expects($this->once())
             ->method('dispatch')
-            ->with(LifecycleEvents::DELETED, $expectedEvent);
+            ->with($expectedEvent, LifecycleEvents::DELETED);
 
         $this->dispatcher->dispatchEvents();
     }
@@ -216,7 +216,7 @@ class LifecycleEventsDispatcherTest extends TestCase
         $expectedEvent = new $annotation->class($user, ['name' => 'toto']);
         $this->sfDispatcher->expects($this->once())
             ->method('dispatch')
-            ->with($annotation->event, $this->equalTo($expectedEvent));
+            ->with($this->equalTo($expectedEvent), $annotation->event);
 
         $this->dispatcher->dispatchEvents();
     }
@@ -237,7 +237,7 @@ class LifecycleEventsDispatcherTest extends TestCase
         $expectedEvent = new LifecycleUpdateEvent($user, ['name' => ['foo', 'bar']], []);
         $this->sfDispatcher->expects($this->once())
             ->method('dispatch')
-            ->with(LifecycleEvents::UPDATED, $expectedEvent);
+            ->with($expectedEvent, LifecycleEvents::UPDATED);
 
         $this->dispatcher->dispatchEvents();
     }
@@ -289,7 +289,7 @@ class LifecycleEventsDispatcherTest extends TestCase
         $expectedEvent = new $annotation->class($user, ['name' => ['foo', 'bar']], []);
         $this->sfDispatcher->expects($this->once())
             ->method('dispatch')
-            ->with($annotation->event, $expectedEvent);
+            ->with($expectedEvent, $annotation->event);
 
         $this->dispatcher->dispatchEvents();
     }
@@ -311,7 +311,7 @@ class LifecycleEventsDispatcherTest extends TestCase
         $expectedEvent = new LifecyclePropertyChangedEvent($user, 'name', 'foo', 'bar');
         $this->sfDispatcher->expects($this->once())
             ->method('dispatch')
-            ->with(LifecycleEvents::PROPERTY_CHANGED, $expectedEvent);
+            ->with($expectedEvent, LifecycleEvents::PROPERTY_CHANGED);
 
         $this->dispatcher->dispatchEvents();
     }
@@ -365,7 +365,7 @@ class LifecycleEventsDispatcherTest extends TestCase
         $expectedEvent = new $annotation->class($user, 'name', 'foo', 'bar');
         $this->sfDispatcher->expects($this->once())
             ->method('dispatch')
-            ->with($annotation->event, $expectedEvent);
+            ->with($expectedEvent, $annotation->event);
 
         $this->dispatcher->dispatchEvents();
     }
@@ -388,7 +388,7 @@ class LifecycleEventsDispatcherTest extends TestCase
         $expectedEvent = new LifecycleCollectionChangedEvent($user, 'friends', $deleted, $inserted);
         $this->sfDispatcher->expects($this->once())
             ->method('dispatch')
-            ->with(LifecycleEvents::COLLECTION_CHANGED, $expectedEvent);
+            ->with($expectedEvent, LifecycleEvents::COLLECTION_CHANGED);
 
         $this->dispatcher->dispatchEvents();
     }
@@ -446,7 +446,7 @@ class LifecycleEventsDispatcherTest extends TestCase
         $expectedEvent = new $annotation->class($user, 'friends', $deleted, $inserted);
         $this->sfDispatcher->expects($this->once())
             ->method('dispatch')
-            ->with($annotation->event, $expectedEvent);
+            ->with($expectedEvent, $annotation->event);
 
         $this->dispatcher->dispatchEvents();
     }
@@ -455,7 +455,7 @@ class LifecycleEventsDispatcherTest extends TestCase
     {
         $this->sfDispatcher->expects($this->once())
             ->method('dispatch')
-            ->with('w3c.lifecycle.preAutoDispatch', new PreAutoDispatchEvent($this->dispatcher));
+            ->with(new PreAutoDispatchEvent($this->dispatcher),'w3c.lifecycle.preAutoDispatch');
 
         $this->dispatcher->preAutoDispatch();
     }

@@ -11,6 +11,7 @@ use Doctrine\ORM\Event\LifecycleEventArgs;
 use Doctrine\ORM\Event\PreUpdateEventArgs;
 use Doctrine\ORM\Mapping\ClassMetadata;
 use Doctrine\ORM\UnitOfWork;
+use PHPUnit\Framework\TestCase;
 use PHPUnit_Framework_MockObject_MockObject as MockObject;
 use W3C\LifecycleEventsBundle\Annotation\Change;
 use W3C\LifecycleEventsBundle\Annotation\Update;
@@ -22,7 +23,7 @@ use W3C\LifecycleEventsBundle\Tests\Annotation\Fixtures\Person;
 /**
  * @author Jean-Guilhem Rouel <jean-gui@w3.org>
  */
-class LifecycleEventsListenerInverseTest extends \PHPUnit_Framework_TestCase
+class LifecycleEventsListenerInverseTest extends TestCase
 {
     /**
      * @var LifecycleEventsListener
@@ -55,7 +56,7 @@ class LifecycleEventsListenerInverseTest extends \PHPUnit_Framework_TestCase
     private $friend1;
     private $friend2;
 
-    public function setUp()
+    public function setUp() : void
     {
         parent::setUp();
 

@@ -27,7 +27,7 @@ class AnnotationGetterTest extends TestCase
      */
     private $classMetadata;
 
-    public function setUp()
+    public function setUp() : void
     {
         parent::setUp();
 

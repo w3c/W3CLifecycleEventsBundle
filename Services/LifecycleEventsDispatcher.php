@@ -2,8 +2,8 @@
 
 namespace W3C\LifecycleEventsBundle\Services;
 
-use Doctrine\Common\Persistence\Event\LifecycleEventArgs;
-use Doctrine\Common\Persistence\Event\PreUpdateEventArgs;
+use Doctrine\Persistence\Event\LifecycleEventArgs;
+use Doctrine\Persistence\Event\PreUpdateEventArgs;
 use Doctrine\Common\Util\ClassUtils;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use W3C\LifecycleEventsBundle\Annotation\Change;
@@ -110,7 +110,7 @@ class LifecycleEventsDispatcher
             $eventArgs  = $creation[1];
             $entity     = $eventArgs->getObject();
 
-            $this->dispatcher->dispatch($annotation->event, new $annotation->class($entity));
+            $this->dispatcher->dispatch(new $annotation->class($entity), $annotation->event);
         }
     }
 
@@ -129,7 +129,7 @@ class LifecycleEventsDispatcher
             $identifier = $deletion[2];
             $entity     = $eventArgs->getObject();
 
-            $this->dispatcher->dispatch($annotation->event, new $annotation->class($entity, $identifier));
+            $this->dispatcher->dispatch(new $annotation->class($entity, $identifier), $annotation->event);
         }
     }
 
@@ -145,8 +145,8 @@ class LifecycleEventsDispatcher
             list($annotation, $entity, $propertiesChanges, $collectionsChanges) = $update;
 
             $this->dispatcher->dispatch(
+                new $annotation->class($entity, $propertiesChanges, $collectionsChanges),
                 $annotation->event,
-                new $annotation->class($entity, $propertiesChanges, $collectionsChanges)
             );
         }
     }
@@ -163,8 +163,8 @@ class LifecycleEventsDispatcher
             list($annotation, $entity, $property, $oldValue, $newValue) = $propertyChange;
 
             $this->dispatcher->dispatch(
+                new $annotation->class($entity, $property, $oldValue, $newValue),
                 $annotation->event,
-                new $annotation->class($entity, $property, $oldValue, $newValue)
             );
         }
     }
@@ -187,8 +187,8 @@ class LifecycleEventsDispatcher
             }
 
             $this->dispatcher->dispatch(
+                new $annotation->class($entity, $property, $deleted, $added),
                 $annotation->event,
-                new $annotation->class($entity, $property, $deleted, $added)
             );
         }
     }
@@ -330,6 +330,6 @@ class LifecycleEventsDispatcher
      */
     public function preAutoDispatch()
     {
-        $this->dispatcher->dispatch('w3c.lifecycle.preAutoDispatch', new PreAutoDispatchEvent($this));
+        $this->dispatcher->dispatch(new PreAutoDispatchEvent($this), 'w3c.lifecycle.preAutoDispatch');
     }
 }

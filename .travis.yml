@@ -3,10 +3,7 @@ sudo: false
 language: php
 
 php:
-  - 5.6
-  - 7.0
-  - 7.1
-  - hhvm
+  - 7.4
 
 env:
   global:
@@ -15,12 +12,8 @@ env:
 matrix:
   fast_finish: true
   include:
-    - php: 7.0
-    - php: 5.6
-    - php: 7.1
+    - php: 7.4
       env: DEPENDENCIES=beta
-  allow_failures:
-    - php: hhvm
 
 before_install:
   - if [ "$DEPENDENCIES" = "beta" ]; then composer config minimum-stability beta; fi;

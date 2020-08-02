@@ -10,6 +10,7 @@ use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\Event\PreUpdateEventArgs;
 use Doctrine\ORM\Mapping\ClassMetadata;
 use Doctrine\ORM\UnitOfWork;
+use PHPUnit\Framework\TestCase;
 use PHPUnit_Framework_MockObject_MockObject as MockObject;
 use W3C\LifecycleEventsBundle\Annotation\Change;
 use W3C\LifecycleEventsBundle\Annotation\Update;
@@ -26,7 +27,7 @@ use W3C\LifecycleEventsBundle\Tests\EventListener\Fixtures\UserNoAnnotation;
 /**
  * @author Jean-Guilhem Rouel <jean-gui@w3.org>
  */
-class LifecyclePropertyEventsListenerTest extends \PHPUnit_Framework_TestCase
+class LifecyclePropertyEventsListenerTest extends TestCase
 {
     /**
      * @var LifecycleEventsListener
@@ -58,7 +59,7 @@ class LifecyclePropertyEventsListenerTest extends \PHPUnit_Framework_TestCase
      */
     private $classMetadata;
 
-    public function setUp()
+    public function setUp() : void
     {
         parent::setUp();
 

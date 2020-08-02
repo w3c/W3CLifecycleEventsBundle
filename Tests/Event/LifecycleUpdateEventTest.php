@@ -20,7 +20,7 @@ class LifecycleUpdateEventTest extends TestCase
      */
     private $event;
 
-    public function setUp()
+    public function setUp() : void
     {
         $entity                  = new User();
         $this->propertyChanges   = ['name' => ['old' => 'foo', 'new' => 'bar']];
