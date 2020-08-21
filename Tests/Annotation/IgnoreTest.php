@@ -22,7 +22,7 @@ class IgnoreTest extends TestCase
      */
     private $reader;
 
-    public function setUp()
+    public function setUp() : void
     {
         $loader = require __DIR__ . '/../../vendor/autoload.php';
         AnnotationRegistry::registerLoader(array($loader, 'loadClass'));

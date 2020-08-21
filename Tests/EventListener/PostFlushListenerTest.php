@@ -22,7 +22,7 @@ class PostFlushListenerTest extends TestCase
      */
     private $event;
 
-    public function setUp()
+    public function setUp() : void
     {
         parent::setUp();
 
