@@ -2,7 +2,7 @@
 
 namespace W3C\LifecycleEventsBundle\Event;
 
-use Symfony\Component\EventDispatcher\Event;
+use Symfony\Contracts\EventDispatcher\Event;
 
 /**
  * LifecycleEvent is used when an entity is created
