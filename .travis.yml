@@ -4,28 +4,33 @@ language: php
 
 php:
   - 7.4
+  - 8.0
 
 env:
   global:
-    - deps=high
+    - XDEBUG_MODE=coverage
+    - SYMFONY_DEPRECATIONS_HELPER=weak
 
 matrix:
   fast_finish: true
   include:
     - php: 7.4
-      env: DEPENDENCIES=beta
-
-before_install:
-  - if [ "$DEPENDENCIES" = "beta" ]; then composer config minimum-stability beta; fi;
+      env: deps=low
+    - php: 8.0
+      env: deps=low
 
 install:
-  - if [ "$deps" = "no" ]; then composer install; fi
-  - if [ "$deps" = "low" ]; then composer update --prefer-lowest; fi
-  - if [ "$deps" = "high" ]; then composer update; fi
+  - |
+    # Installing dependencies ...
+    if [[ $deps = "low" ]]; then
+      composer update --prefer-dist --prefer-lowest
+    else
+      composer install --prefer-dist
+    fi
 
 script:
  - mkdir -p build/logs
  - vendor/bin/phpunit --coverage-clover build/logs/clover.xml
 
 after_script:
- - php vendor/bin/coveralls -v
+ - php vendor/bin/php-coveralls -v

@@ -2,7 +2,7 @@
 
 namespace W3C\LifecycleEventsBundle\Event;
 
-use Symfony\Component\EventDispatcher\Event;
+use Symfony\Contracts\EventDispatcher\Event;
 use W3C\LifecycleEventsBundle\Services\LifecycleEventsDispatcher;
 
 /**
