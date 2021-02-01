@@ -6,10 +6,6 @@ php:
   - 7.4
   - 8.0
 
-env:
-  global:
-    - deps=high
-
 matrix:
   fast_finish: true
   include:
@@ -19,9 +15,13 @@ matrix:
       env: deps=low
 
 install:
-  - if [ "$deps" = "no" ]; then composer install; fi
-  - if [ "$deps" = "low" ]; then composer update --prefer-lowest; fi
-  - if [ "$deps" = "high" ]; then composer update; fi
+  - |
+    # Installing dependencies ...
+    if [[ $deps = "low" ]]; then
+      composer update --prefer-dist --prefer-lowest
+    else
+      composer install --prefer-dist
+    fi
 
 script:
  - mkdir -p build/logs
