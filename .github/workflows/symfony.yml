@@ -1,0 +1,40 @@
+name: W3CLifecycleEventsBundle tests
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        php-version: [7.4, 8.0]
+        deps: ["low","default"]
+    env:
+      XDEBUG_MODE: coverage
+      SYMFONY_DEPRECATIONS_HELPER: weak
+    steps:
+    - uses: actions/checkout@v2
+    - name: Use PHP version ${{ matrix.php-version }}
+      uses: shivammathur/setup-php@v2
+      with:
+        php-version: ${{ matrix.php-version }}
+        coverage: xdebug
+    - run: |
+        if [[ "${{ matrix.deps }}" = "low" ]]; then
+            composer update --prefer-dist --prefer-lowest
+        else
+            composer install --prefer-dist
+        fi
+    - run: mkdir -p build/logs
+    - run: vendor/bin/phpunit --coverage-clover build/logs/clover.xml
+    - name: Upload coverage results to Coveralls
+      env:
+        COVERALLS_REPO_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        composer global require php-coveralls/php-coveralls
+        php-coveralls --coverage_clover=build/logs/clover.xml -v
