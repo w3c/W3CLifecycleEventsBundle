@@ -1,6 +1,6 @@
 <?php
 
-namespace W3C\LifecycleEventsBundle\Test\Event;
+namespace W3C\LifecycleEventsBundle\Tests\Event;
 
 use PHPUnit\Framework\TestCase;
 use W3C\LifecycleEventsBundle\Event\LifecycleUpdateEvent;
