@@ -38,7 +38,7 @@ class LifecyclePropertyEventsListener
      * @return void
      * @throws ReflectionException
      */
-    public function preUpdate(PreUpdateEventArgs $args)
+    public function preUpdate(PreUpdateEventArgs $args): void
     {
         $this->addPropertyChanges($args);
         $this->addCollectionChanges($args);
