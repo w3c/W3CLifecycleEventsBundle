@@ -18,7 +18,7 @@ jobs:
       XDEBUG_MODE: coverage
       SYMFONY_DEPRECATIONS_HELPER: weak
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
     - name: Use PHP version ${{ matrix.php-version }}
       uses: shivammathur/setup-php@v2
       with:
