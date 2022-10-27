@@ -12,24 +12,14 @@ use W3C\LifecycleEventsBundle\Services\LifecycleEventsDispatcher;
  */
 class PreAutoDispatchEvent extends Event
 {
+    protected LifecycleEventsDispatcher $dispatcher;
 
-    /**
-     * @var LifecycleEventsDispatcher
-     */
-    protected $dispatcher;
-
-    /**
-     * @param $dispatcher
-     */
     public function __construct(LifecycleEventsDispatcher $dispatcher)
     {
         $this->dispatcher = $dispatcher;
     }
 
-    /**
-     * @return mixed
-     */
-    public function getDispatcher()
+    public function getDispatcher(): LifecycleEventsDispatcher
     {
         return $this->dispatcher;
     }

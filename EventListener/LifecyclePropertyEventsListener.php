@@ -93,7 +93,7 @@ class LifecyclePropertyEventsListener
             $annotation = $this->annotationGetter->getPropertyAnnotation($classMetadata, $property, Change::class);
 
             // Make sure $u belongs to the entity we are working on
-            if (!isset($annotation)) {
+            if (!$annotation) {
                 continue;
             }
 

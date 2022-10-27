@@ -12,7 +12,7 @@ class LifecyclePropertyChangedEvent extends LifecycleEvent
     /**
      * @var string
      */
-    private $property;
+    private string $property;
 
     /**
      * @var mixed
@@ -32,7 +32,7 @@ class LifecyclePropertyChangedEvent extends LifecycleEvent
      * @param mixed $oldValue
      * @param mixed $newValue
      */
-    public function __construct($entity, $property, $oldValue = null, $newValue = null)
+    public function __construct(object $entity, string $property, $oldValue = null, $newValue = null)
     {
         parent::__construct($entity);
 
@@ -44,7 +44,7 @@ class LifecyclePropertyChangedEvent extends LifecycleEvent
     /**
      * @return string
      */
-    public function getProperty()
+    public function getProperty(): string
     {
         return $this->property;
     }

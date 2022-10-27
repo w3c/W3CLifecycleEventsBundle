@@ -4,6 +4,8 @@ namespace W3C\LifecycleEventsBundle\Services;
 
 use Doctrine\Common\Annotations\Reader;
 use Doctrine\ORM\Mapping\ClassMetadata;
+use ReflectionClass;
+use ReflectionException;
 
 /**
  * Convenient class to get lifecycle annotations more easily
@@ -12,10 +14,7 @@ use Doctrine\ORM\Mapping\ClassMetadata;
  */
 class AnnotationGetter
 {
-    /**
-     * @var Reader
-     */
-    private $reader;
+    private Reader $reader;
 
     public function __construct(Reader $reader)
     {
@@ -25,31 +24,31 @@ class AnnotationGetter
     /**
      * Get a class-level annotation
      *
-     * @param string $class Class to get annotation of
+     * @param string $class           Class to get annotation of
      * @param string $annotationClass Class of the annotation to get
      *
      * @return object|null object of same class as $annotationClass or null if no annotation is found
+     * @throws ReflectionException
      */
-    public function getAnnotation($class, $annotationClass)
+    public function getAnnotation(string $class, string $annotationClass): ?object
     {
-        $annotation = $this->reader->getClassAnnotation(
-            new \ReflectionClass($class),
+        return $this->reader->getClassAnnotation(
+            new ReflectionClass($class),
             $annotationClass
         );
-        return $annotation;
     }
 
     /**
      * Get a field-level annotation
      *
-     * @param ClassMetadata $classMetadata Metadata of the class to get annotation of
-     * @param string $field Name of the field to get annotation of
-     * @param string $annotationClass Class of the annotation to get
+     * @param ClassMetadata $classMetadata   Metadata of the class to get annotation of
+     * @param string        $field           Name of the field to get annotation of
+     * @param string        $annotationClass Class of the annotation to get
      *
      * @return object|null object of same class as $annotationClass or null if no annotation is found
-     * @throws \ReflectionException if the field does not exist
+     * @throws ReflectionException if the field does not exist
      */
-    public function getPropertyAnnotation(ClassMetadata $classMetadata, $field, $annotationClass)
+    public function getPropertyAnnotation(ClassMetadata $classMetadata, string $field, string $annotationClass): ?object
     {
         $reflProperty = $classMetadata->getReflectionProperty($field);
 
@@ -57,7 +56,7 @@ class AnnotationGetter
             return $this->reader->getPropertyAnnotation($reflProperty, $annotationClass);
         }
 
-        throw new \ReflectionException(
+        throw new ReflectionException(
             $classMetadata->getName() . '.' . $field . ' not found. Could this be a private field of a parent class?'
         );
     }

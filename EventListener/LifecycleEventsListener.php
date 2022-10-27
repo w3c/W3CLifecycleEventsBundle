@@ -5,7 +5,9 @@ namespace W3C\LifecycleEventsBundle\EventListener;
 use Doctrine\Common\Util\ClassUtils;
 use Doctrine\ORM\Event\LifecycleEventArgs;
 use Doctrine\ORM\Event\PreUpdateEventArgs;
+use Doctrine\ORM\Mapping\MappingException;
 use Doctrine\ORM\PersistentCollection;
+use ReflectionException;
 use W3C\LifecycleEventsBundle\Annotation\Change;
 use W3C\LifecycleEventsBundle\Annotation\Create;
 use W3C\LifecycleEventsBundle\Annotation\Delete;
@@ -21,17 +23,8 @@ use W3C\LifecycleEventsBundle\Services\LifecycleEventsDispatcher;
  */
 class LifecycleEventsListener
 {
-    /**
-     * Events dispatcher
-     *
-     * @var LifecycleEventsDispatcher
-     */
-    private $dispatcher;
-
-    /**
-     * @var AnnotationGetter
-     */
-    private $annotationGetter;
+    private LifecycleEventsDispatcher $dispatcher;
+    private AnnotationGetter $annotationGetter;
 
     /**
      * Constructs a new instance
@@ -49,10 +42,13 @@ class LifecycleEventsListener
      * Called upon receiving postPersist events
      *
      * @param LifecycleEventArgs $args event to feed the dispatcher with
+     *
+     * @throws MappingException
+     * @throws ReflectionException
      */
-    public function postPersist(LifecycleEventArgs $args)
+    public function postPersist(LifecycleEventArgs $args): void
     {
-        $entity = $args->getEntity();
+        $entity = $args->getObject();
         $class  = ClassUtils::getRealClass(get_class($entity));
         /** @var Create $annotation */
         $annotation = $this->annotationGetter->getAnnotation($class, Create::class);
@@ -60,7 +56,7 @@ class LifecycleEventsListener
             $this->dispatcher->addCreation($annotation, $args);
         }
 
-        $classMetadata = $args->getEntityManager()->getClassMetadata($class);
+        $classMetadata = $args->getObjectManager()->getClassMetadata($class);
         foreach ($classMetadata->getAssociationMappings() as $property => $associationMapping) {
             if (!$classMetadata->isAssociationInverseSide($property)) {
                 if ($classMetadata->isSingleValuedAssociation($property)) {
@@ -78,7 +74,14 @@ class LifecycleEventsListener
         }
     }
 
-    public function preSoftDelete(LifecycleEventArgs $args)
+    /**
+     * @param LifecycleEventArgs $args
+     *
+     * @return void
+     * @throws MappingException
+     * @throws ReflectionException
+     */
+    public function preSoftDelete(LifecycleEventArgs $args): void
     {
         $this->preRemove($args);
     }
@@ -88,10 +91,13 @@ class LifecycleEventsListener
      * objects
      *
      * @param LifecycleEventArgs $args event to feed the dispatcher with
+     *
+     * @throws MappingException
+     * @throws ReflectionException
      */
-    public function preRemove(LifecycleEventArgs $args)
+    public function preRemove(LifecycleEventArgs $args): void
     {
-        $entity = $args->getEntity();
+        $entity = $args->getObject();
         $class  = ClassUtils::getRealClass(get_class($entity));
 
         /** @var Delete $annotation */
@@ -100,7 +106,7 @@ class LifecycleEventsListener
             $this->dispatcher->addDeletion($annotation, $args);
         }
 
-        $classMetadata = $args->getEntityManager()->getClassMetadata($class);
+        $classMetadata = $args->getObjectManager()->getClassMetadata($class);
         foreach ($classMetadata->getAssociationMappings() as $property => $associationMapping) {
             if (!$classMetadata->isAssociationInverseSide($property)) {
                 if ($classMetadata->isSingleValuedAssociation($property)) {
@@ -122,10 +128,13 @@ class LifecycleEventsListener
      * Called upon receiving preUpdate events
      *
      * @param PreUpdateEventArgs $args event to feed the dispatcher with
+     *
+     * @throws MappingException
+     * @throws ReflectionException
      */
-    public function preUpdate(PreUpdateEventArgs $args)
+    public function preUpdate(PreUpdateEventArgs $args): void
     {
-        $entity = $args->getEntity();
+        $entity = $args->getObject();
         $class  = ClassUtils::getRealClass(get_class($entity));
 
         /** @var Update $annotation */
@@ -151,18 +160,20 @@ class LifecycleEventsListener
      * Return an array of collection changes belonging to $entity ignoring those marked with  @IgnoreclassUpdates
      *
      * @param PreUpdateEventArgs $args
-     * @param mixed $entity
+     * @param object             $entity
      *
      * @return array
+     * @throws MappingException
+     * @throws ReflectionException
      */
-    private function buildCollectionChanges(PreUpdateEventArgs $args, $entity)
+    private function buildCollectionChanges(PreUpdateEventArgs $args, object $entity): array
     {
         $realClass          = ClassUtils::getRealClass(get_class($entity));
-        $classMetadata      = $args->getEntityManager()->getClassMetadata($realClass);
+        $classMetadata      = $args->getObjectManager()->getClassMetadata($realClass);
         $collectionsChanges = [];
 
         /** @var PersistentCollection $u */
-        foreach ($args->getEntityManager()->getUnitOfWork()->getScheduledCollectionUpdates() as $u) {
+        foreach ($args->getObjectManager()->getUnitOfWork()->getScheduledCollectionUpdates() as $u) {
             $property = $u->getMapping()['fieldName'];
 
             // Make sure $u and the field belong to the entity we are working on
@@ -192,14 +203,16 @@ class LifecycleEventsListener
      * Return an array of changes to properties (not including collections) ignoring those marked with @IgnoreclassUpdates
      *
      * @param PreUpdateEventArgs $args
-     * @param mixed $entity
+     * @param mixed              $entity
      *
      * @return array
+     * @throws MappingException
+     * @throws ReflectionException
      */
-    private function buildChangeSet(PreUpdateEventArgs $args, $entity)
+    private function buildChangeSet(PreUpdateEventArgs $args, $entity): array
     {
         $realClass     = ClassUtils::getRealClass(get_class($entity));
-        $classMetadata = $args->getEntityManager()->getClassMetadata($realClass);
+        $classMetadata = $args->getObjectManager()->getClassMetadata($realClass);
         $changes       = [];
         foreach (array_keys($args->getEntityChangeSet()) as $property) {
             $ignoreAnnotation = $this->annotationGetter->getPropertyAnnotation(
@@ -221,14 +234,22 @@ class LifecycleEventsListener
 
     /**
      * @param LifecycleEventArgs $args
-     * @param $class
-     * @param $property
-     * @param $change
-     * @param $entity
+     * @param string             $class
+     * @param string             $property
+     * @param array              $change
+     * @param object             $entity
+     *
+     * @throws MappingException
+     * @throws ReflectionException
      */
-    private function collectionUpdateInverse(LifecycleEventArgs $args, $class, $property, $change, $entity)
-    {
-        $em = $args->getEntityManager();
+    private function collectionUpdateInverse(
+        LifecycleEventArgs $args,
+        string $class,
+        string $property,
+        array $change,
+        object $entity
+    ): void {
+        $em = $args->getObjectManager();
         $classMetadata = $em->getClassMetadata($class);
 
         // it is indeed an association with a potential inverse side
@@ -247,14 +268,23 @@ class LifecycleEventsListener
 
     /**
      * @param LifecycleEventArgs $args
-     * @param $class
-     * @param $property
-     * @param $change
-     * @param $entity
+     * @param string             $class
+     * @param string             $property
+     * @param array              $change
+     * @param object             $entity
+     *
+     * @throws MappingException
+     * @throws ReflectionException
      */
-    private function propertyUpdateInverse(LifecycleEventArgs $args, $class, $property, $change, $entity)
+    private function propertyUpdateInverse(
+        LifecycleEventArgs $args,
+        string $class,
+        string $property,
+        array $change,
+        object $entity
+    ): void
     {
-        $em = $args->getEntityManager();
+        $em = $args->getObjectManager();
         $classMetadata = $em->getClassMetadata($class);
 
         $mapping = $classMetadata->getAssociationMapping($property);
@@ -292,20 +322,22 @@ class LifecycleEventsListener
     }
 
     /**
-     * @param $oldEntity
-     * @param $owningEntity
+     * @param object|null        $oldEntity
+     * @param object             $owningEntity
      * @param LifecycleEventArgs $args
-     * @param $mapping
+     * @param array              $mapping
+     *
+     * @throws ReflectionException
      */
     private function updateOldInverse(
-        $oldEntity,
-        $owningEntity,
+        ?object $oldEntity,
+        object $owningEntity,
         LifecycleEventArgs $args,
-        $mapping
-    ) {
-        $inverseField = isset($mapping['inversedBy']) ? $mapping['inversedBy'] : null;
+        array $mapping
+    ): void {
+        $inverseField = $mapping['inversedBy'] ?? null;
         if ($inverseField && $oldEntity) {
-            $em = $args->getEntityManager();
+            $em = $args->getObjectManager();
 
             $oldClass = ClassUtils::getRealClass(get_class($oldEntity));
             $inverseMetadata = $em->getClassMetadata($oldClass);
@@ -320,7 +352,7 @@ class LifecycleEventsListener
                 && !$this->annotationGetter->getPropertyAnnotation($inverseMetadata,
                     $inverseField, IgnoreClassUpdates::class);
 
-            $inverseMonitoredField = $inverseField && $targetChangeAnnotation && $targetChangeAnnotation->monitor_owning;
+            $inverseMonitoredField = $targetChangeAnnotation && $targetChangeAnnotation->monitor_owning;
 
             $em->initializeObject($oldEntity);
 
@@ -338,22 +370,30 @@ class LifecycleEventsListener
                     $targetChangeAnnotation,
                     $oldEntity,
                     $mapping['inversedBy'],
-                    $owningEntity,
-                    null
+                    $owningEntity
                 );
             }
         }
     }
 
+    /**
+     * @param object|null        $newEntity
+     * @param object             $owningEntity
+     * @param LifecycleEventArgs $args
+     * @param array              $mapping
+     *
+     * @return void
+     * @throws ReflectionException
+     */
     private function updateNewInverse(
-        $newEntity,
-        $owningEntity,
+        ?object $newEntity,
+        object $owningEntity,
         LifecycleEventArgs $args,
-        $mapping
-    ) {
-        $inverseField = isset($mapping['inversedBy']) ? $mapping['inversedBy'] : null;
+        array $mapping
+    ): void {
+        $inverseField = $mapping['inversedBy'] ?? null;
         if ($inverseField && $newEntity) {
-            $em = $args->getEntityManager();
+            $em = $args->getObjectManager();
 
             $newClass        = ClassUtils::getRealClass(get_class($newEntity));
             $inverseMetadata = $em->getClassMetadata($newClass);
@@ -368,7 +408,7 @@ class LifecycleEventsListener
                 && !$this->annotationGetter->getPropertyAnnotation($inverseMetadata,
                     $inverseField, IgnoreClassUpdates::class);
 
-            $inverseMonitoredField = $inverseField && $targetChangeAnnotation && $targetChangeAnnotation->monitor_owning;
+            $inverseMonitoredField = $targetChangeAnnotation && $targetChangeAnnotation->monitor_owning;
 
             $em->initializeObject($newEntity);
 
@@ -393,15 +433,24 @@ class LifecycleEventsListener
         }
     }
 
+    /**
+     * @param object|null        $deletedEntity
+     * @param object             $owningEntity
+     * @param LifecycleEventArgs $args
+     * @param array              $mapping
+     *
+     * @return void
+     * @throws ReflectionException
+     */
     private function updateDeletedInverse(
-        $deletedEntity,
-        $owningEntity,
+        ?object $deletedEntity,
+        object $owningEntity,
         LifecycleEventArgs $args,
-        $mapping
-    ) {
-        $inverseField = isset($mapping['inversedBy']) ? $mapping['inversedBy'] : null;
+        array $mapping
+    ): void {
+        $inverseField = $mapping['inversedBy'] ?? null;
         if ($inverseField && $deletedEntity) {
-            $em = $args->getEntityManager();
+            $em = $args->getObjectManager();
 
             $deletedClass    = ClassUtils::getRealClass(get_class($deletedEntity));
             $inverseMetadata = $em->getClassMetadata($deletedClass);
@@ -416,7 +465,7 @@ class LifecycleEventsListener
                 && !$this->annotationGetter->getPropertyAnnotation($inverseMetadata,
                     $inverseField, IgnoreClassUpdates::class);
 
-            $inverseMonitoredField = $inverseField && $targetChangeAnnotation && $targetChangeAnnotation->monitor_owning;
+            $inverseMonitoredField = $targetChangeAnnotation && $targetChangeAnnotation->monitor_owning;
 
             $em->initializeObject($deletedEntity);
 
@@ -441,15 +490,24 @@ class LifecycleEventsListener
         }
     }
 
+    /**
+     * @param object|null        $insertedEntity
+     * @param object             $owningEntity
+     * @param LifecycleEventArgs $args
+     * @param array              $mapping
+     *
+     * @return void
+     * @throws ReflectionException
+     */
     private function updateInsertedInverse(
-        $insertedEntity,
-        $owningEntity,
+        ?object $insertedEntity,
+        object $owningEntity,
         LifecycleEventArgs $args,
-        $mapping
-    ) {
-        $inverseField = isset($mapping['inversedBy']) ? $mapping['inversedBy'] : null;
+        array $mapping
+    ): void {
+        $inverseField = $mapping['inversedBy'] ?? null;
         if ($inverseField && $insertedEntity) {
-            $em = $args->getEntityManager();
+            $em = $args->getObjectManager();
 
             $deletedClass    = ClassUtils::getRealClass(get_class($insertedEntity));
             $inverseMetadata = $em->getClassMetadata($deletedClass);
@@ -464,7 +522,7 @@ class LifecycleEventsListener
                 && !$this->annotationGetter->getPropertyAnnotation($inverseMetadata,
                     $inverseField, IgnoreClassUpdates::class);
 
-            $inverseMonitoredField = $inverseField && $targetChangeAnnotation && $targetChangeAnnotation->monitor_owning;
+            $inverseMonitoredField = $targetChangeAnnotation && $targetChangeAnnotation->monitor_owning;
 
             $em->initializeObject($insertedEntity);
 
@@ -488,5 +546,4 @@ class LifecycleEventsListener
             }
         }
     }
-
 }
