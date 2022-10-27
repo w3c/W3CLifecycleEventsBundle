@@ -6,7 +6,6 @@ use Doctrine\Persistence\Event\LifecycleEventArgs;
 use Doctrine\Persistence\Event\PreUpdateEventArgs;
 use Doctrine\Common\Util\ClassUtils;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
-use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use W3C\LifecycleEventsBundle\Annotation\Change;
 use W3C\LifecycleEventsBundle\Annotation\Create;
 use W3C\LifecycleEventsBundle\Annotation\Delete;
@@ -77,9 +76,9 @@ class LifecycleEventsDispatcher
      * Create a new instance
      *
      * @param EventDispatcherInterface $dispatcher a Symfony's event dispatcher
-     * @param $autoDispatch
+     * @param bool                     $autoDispatch
      */
-    public function __construct(EventDispatcherInterface $dispatcher, $autoDispatch)
+    public function __construct(EventDispatcherInterface $dispatcher, bool $autoDispatch)
     {
         $this->dispatcher = $dispatcher;
         $this->autoDispatch = $autoDispatch;
@@ -249,7 +248,7 @@ class LifecycleEventsDispatcher
 
     public function addUpdate(
         Update $annotation,
-        $entity,
+        object $entity,
         array $propertyChangeSet = null,
         array $collectionChangeSet = null
     ): void {
@@ -262,7 +261,7 @@ class LifecycleEventsDispatcher
         }
     }
 
-    public function getUpdate($entity): ?array
+    public function getUpdate(object $entity): ?array
     {
         foreach ($this->updates as $key => $update) {
             if ($update[1] === $entity) {
@@ -278,7 +277,13 @@ class LifecycleEventsDispatcher
         return $this->propertyChanges;
     }
 
-    public function addPropertyChange(Change $annotation, $entity, $property, $oldValue = null, $newValue = null): void
+    public function addPropertyChange(
+        Change $annotation,
+        object $entity,
+        string $property,
+        $oldValue = null,
+        $newValue = null
+    ): void
     {
         $this->propertyChanges[] = [$annotation, $entity, $property, $oldValue, $newValue];
     }
@@ -290,10 +295,10 @@ class LifecycleEventsDispatcher
 
     public function addCollectionChange(
         Change $annotation,
-        $entity,
-        $property,
-        $deletedElements = [],
-        $insertedElements = []
+        object $entity,
+        string $property,
+        array $deletedElements = [],
+        array $insertedElements = []
     ): void {
         if (list($key, $change) = $this->getCollectionChange($entity, $property)) {
             $change[3] = array_merge_recursive((array)$change[3], (array)$deletedElements);
@@ -304,7 +309,7 @@ class LifecycleEventsDispatcher
         }
     }
 
-    public function getCollectionChange($entity, $property): ?array
+    public function getCollectionChange(object $entity, string $property): ?array
     {
         foreach ($this->collectionChanges as $key => $update) {
             if ($update[1] === $entity && $update[2] === $property) {
@@ -330,10 +335,11 @@ class LifecycleEventsDispatcher
     /**
      * Set automatic dispatching of events
      *
-     * @param $autoDispatch
+     * @param bool $autoDispatch
+     *
      * @return $this
      */
-    public function setAutoDispatch($autoDispatch): LifecycleEventsDispatcher
+    public function setAutoDispatch(bool $autoDispatch): LifecycleEventsDispatcher
     {
         $this->autoDispatch = $autoDispatch;
 
