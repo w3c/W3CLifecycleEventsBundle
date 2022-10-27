@@ -49,7 +49,7 @@ class LifecyclePropertyEventsListener
      *
      * @throws ReflectionException
      */
-    private function addPropertyChanges(PreUpdateEventArgs $args)
+    private function addPropertyChanges(PreUpdateEventArgs $args): void
     {
         $entity        = $args->getObject();
         $realClass     = ClassUtils::getRealClass(get_class($entity));
