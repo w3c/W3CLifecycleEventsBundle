@@ -73,6 +73,11 @@ class LifecycleEventsDispatcherTest extends TestCase
             ->getMock();
     }
 
+    public function testGetDispatcher()
+    {
+        $this->assertEquals($this->sfDispatcher, $this->dispatcher->getDispatcher());
+    }
+
     public function testDispatchCreationEvents()
     {
         $user = new User();
