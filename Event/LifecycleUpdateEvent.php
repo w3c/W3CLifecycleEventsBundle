@@ -2,6 +2,8 @@
 
 namespace W3C\LifecycleEventsBundle\Event;
 
+use InvalidArgumentException;
+
 /**
  * LifecycleUpdateEvent is used when an entity is updated
  *
@@ -9,22 +11,15 @@ namespace W3C\LifecycleEventsBundle\Event;
  */
 class LifecycleUpdateEvent extends LifecycleEvent
 {
-    /**
-     * @var array
-     */
-    private $propertiesChangeSet;
+    private array $propertiesChangeSet;
+    private array $collectionsChangeSet;
 
     /**
-     * @var array
+     * @param object $entity               the entity being modified
+     * @param array  $propertiesChangeSet  list of changes to properties
+     * @param array  $collectionsChangeSet list of changes to collections
      */
-    private $collectionsChangeSet;
-
-    /**
-     * @param object $entity the entity being modified
-     * @param array $propertiesChangeSet list of changes to properties
-     * @param array $collectionsChangeSet list of changes to collections
-     */
-    public function __construct($entity, array $propertiesChangeSet = [], array $collectionsChangeSet = [])
+    public function __construct(object $entity, array $propertiesChangeSet = [], array $collectionsChangeSet = [])
     {
         parent::__construct($entity);
 
@@ -37,7 +32,7 @@ class LifecycleUpdateEvent extends LifecycleEvent
      *
      * @return array
      */
-    public function getChangedProperties()
+    public function getChangedProperties(): array
     {
         return array_keys($this->propertiesChangeSet);
     }
@@ -47,7 +42,7 @@ class LifecycleUpdateEvent extends LifecycleEvent
      *
      * @return bool
      */
-    public function havePropertiesChanged()
+    public function havePropertiesChanged(): bool
     {
         return $this->propertiesChangeSet && count($this->propertiesChangeSet) > 0;
     }
@@ -57,7 +52,7 @@ class LifecycleUpdateEvent extends LifecycleEvent
      *
      * @return array
      */
-    public function getChangedCollections()
+    public function getChangedCollections(): array
     {
         return array_keys($this->collectionsChangeSet);
     }
@@ -67,7 +62,7 @@ class LifecycleUpdateEvent extends LifecycleEvent
      *
      * @return bool
      */
-    public function haveCollectionsChanged()
+    public function haveCollectionsChanged(): bool
     {
         return $this->collectionsChangeSet && count($this->collectionsChangeSet) > 0;
     }
@@ -79,7 +74,7 @@ class LifecycleUpdateEvent extends LifecycleEvent
      *
      * @return boolean
      */
-    public function hasChangedField($field)
+    public function hasChangedField(string $field): bool
     {
         return isset($this->propertiesChangeSet[$field]) || isset($this->collectionsChangeSet[$field]);
     }
@@ -91,7 +86,7 @@ class LifecycleUpdateEvent extends LifecycleEvent
      *
      * @return mixed
      */
-    public function getOldValue($field)
+    public function getOldValue(string $field)
     {
         $this->assertValidProperty($field);
 
@@ -105,7 +100,7 @@ class LifecycleUpdateEvent extends LifecycleEvent
      *
      * @return mixed
      */
-    public function getNewValue($field)
+    public function getNewValue(string $field)
     {
         $this->assertValidProperty($field);
 
@@ -119,7 +114,7 @@ class LifecycleUpdateEvent extends LifecycleEvent
      *
      * @return array
      */
-    public function getDeletedElements($field)
+    public function getDeletedElements(string $field): array
     {
         $this->assertValidCollection($field);
 
@@ -133,7 +128,7 @@ class LifecycleUpdateEvent extends LifecycleEvent
      *
      * @return array
      */
-    public function getInsertedElements($field)
+    public function getInsertedElements(string $field): array
     {
         $this->assertValidCollection($field);
 
@@ -147,12 +142,12 @@ class LifecycleUpdateEvent extends LifecycleEvent
      *
      * @return void
      *
-     * @throws \InvalidArgumentException
+     * @throws InvalidArgumentException
      */
-    private function assertValidProperty($field)
+    private function assertValidProperty(string $field)
     {
         if (!isset($this->propertiesChangeSet[$field])) {
-            throw new \InvalidArgumentException(sprintf(
+            throw new InvalidArgumentException(sprintf(
                 'Field "%s" is not a valid field of the entity "%s" org has not changed.',
                 $field,
                 get_class($this->getEntity())
@@ -167,12 +162,12 @@ class LifecycleUpdateEvent extends LifecycleEvent
      *
      * @return void
      *
-     * @throws \InvalidArgumentException
+     * @throws InvalidArgumentException
      */
-    private function assertValidCollection($field)
+    private function assertValidCollection(string $field)
     {
         if (!isset($this->collectionsChangeSet[$field])) {
-            throw new \InvalidArgumentException(sprintf(
+            throw new InvalidArgumentException(sprintf(
                 'Field "%s" is not a valid collection of the entity "%s" org has not changed.',
                 $field,
                 get_class($this->getEntity())

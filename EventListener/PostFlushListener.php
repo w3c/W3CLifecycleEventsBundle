@@ -12,18 +12,8 @@ use W3C\LifecycleEventsBundle\Services\LifecycleEventsDispatcher;
  */
 class PostFlushListener
 {
-    /**
-     * Events dispatcher
-     *
-     * @var LifecycleEventsDispatcher
-     */
-    private $dispatcher;
+    private LifecycleEventsDispatcher $dispatcher;
 
-    /**
-     * Constructs a new instance
-     *
-     * @param LifecycleEventsDispatcher $dispatcher the dispatcher to fed
-     */
     public function __construct(LifecycleEventsDispatcher $dispatcher)
     {
         $this->dispatcher = $dispatcher;
@@ -35,7 +25,7 @@ class PostFlushListener
      *
      * @param PostFlushEventArgs $args post flush event
      */
-    public function postFlush(PostFlushEventArgs $args)
+    public function postFlush(PostFlushEventArgs $args): void
     {
         if ($this->dispatcher->getAutoDispatch()) {
             $this->dispatcher->preAutoDispatch();

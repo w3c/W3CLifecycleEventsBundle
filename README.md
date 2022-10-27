@@ -1,6 +1,6 @@
 [![Build Status](https://github.com/w3c/W3CLifecycleEventsBundle/actions/workflows/symfony.yml/badge.svg)](https://github.com/w3c/W3CLifecycleEventsBundle/actions/workflows/symfony.yml)
 [![Coverage Status](https://coveralls.io/repos/github/w3c/W3CLifecycleEventsBundle/badge.svg?branch=master)](https://coveralls.io/github/w3c/W3CLifecycleEventsBundle?branch=master)
-[![SensioLabsInsight](https://insight.sensiolabs.com/projects/7634f8ca-5b9c-48bb-8443-2730c646c095/mini.png)](https://insight.sensiolabs.com/projects/7634f8ca-5b9c-48bb-8443-2730c646c095)
+[![SensioLabsInsight](https://insight.symfony.com/projects/b0d1493c-6de8-4c18-87ad-a12d2487fd59/mini.svg)](https://insight.symfony.com/account/widget?project=b0d1493c-6de8-4c18-87ad-a12d2487fd59)
 
 lifecycle-events-bundle
 =======================

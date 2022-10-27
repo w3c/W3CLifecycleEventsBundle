@@ -9,30 +9,19 @@ namespace W3C\LifecycleEventsBundle\Event;
  */
 class LifecycleCollectionChangedEvent extends LifecycleEvent
 {
-    /**
-     * @var string
-     */
-    private $property;
-
-    /**
-     * @var array
-     */
-    private $deletedElements;
-
-    /**
-     * @var array
-     */
-    private $insertedElements;
+    private string $property;
+    private ?array $deletedElements;
+    private ?array $insertedElements;
 
     /**
      * Constructor.
      *
-     * @param object $entity
-     * @param string $property
-     * @param array $deletedElements
-     * @param array $insertedElements
+     * @param object     $entity
+     * @param string     $property
+     * @param array|null $deletedElements
+     * @param array|null $insertedElements
      */
-    public function __construct($entity, $property, $deletedElements = null, $insertedElements = null)
+    public function __construct(object $entity, string $property, array $deletedElements = null, array $insertedElements = null)
     {
         parent::__construct($entity);
 
@@ -41,26 +30,17 @@ class LifecycleCollectionChangedEvent extends LifecycleEvent
         $this->insertedElements = $insertedElements;
     }
 
-    /**
-     * @return string
-     */
-    public function getProperty()
+    public function getProperty(): string
     {
         return $this->property;
     }
 
-    /**
-     * @return array|null
-     */
-    public function getDeletedElements()
+    public function getDeletedElements(): ?array
     {
         return $this->deletedElements;
     }
 
-    /**
-     * @return array|null
-     */
-    public function getInsertedElements()
+    public function getInsertedElements(): ?array
     {
         return $this->insertedElements;
     }

@@ -13,19 +13,12 @@ use W3C\LifecycleEventsBundle\Event\LifecyclePropertyChangedEvent;
  */
 class Change
 {
-    /**
-     * @var string
-     */
-    public $event = LifecycleEvents::PROPERTY_CHANGED;
-
-    /**
-     * @var string
-     */
-    public $class = LifecyclePropertyChangedEvent::class;
+    public string $event = LifecycleEvents::PROPERTY_CHANGED;
+    public string $class = LifecyclePropertyChangedEvent::class;
 
     /**
      * @var bool
      * @deprecated to be removed in next major version and the class will always act as if it was set to true
      */
-    public $monitor_owning = false;
+    public bool $monitor_owning = false;
 }

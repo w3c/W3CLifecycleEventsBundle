@@ -11,14 +11,14 @@ use Symfony\Contracts\EventDispatcher\Event;
  */
 class LifecycleEvent extends Event
 {
-    protected $entity;
+    protected object $entity;
 
-    public function __construct($entity)
+    public function __construct(object $entity)
     {
         $this->entity = $entity;
     }
 
-    public function getEntity()
+    public function getEntity(): object
     {
         return $this->entity;
     }

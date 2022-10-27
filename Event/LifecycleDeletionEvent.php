@@ -10,15 +10,15 @@ namespace W3C\LifecycleEventsBundle\Event;
  */
 class LifecycleDeletionEvent extends LifecycleEvent
 {
-    protected $identifier;
+    protected array $identifier;
 
-    public function __construct($entity, $identifier = null)
+    public function __construct(object $entity, array $identifier = null)
     {
         parent::__construct($entity);
         $this->identifier = $identifier;
     }
 
-    public function getIdentifier()
+    public function getIdentifier(): array
     {
         return $this->identifier;
     }
