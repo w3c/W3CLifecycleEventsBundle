@@ -2,9 +2,6 @@
 
 namespace W3C\LifecycleEventsBundle\Tests\EventListener;
 
-use Doctrine\Common\Annotations\AnnotationReader;
-use Doctrine\Common\Annotations\AnnotationRegistry;
-use Doctrine\Common\Annotations\Reader;
 use Doctrine\Common\Util\ClassUtils;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\Event\LifecycleEventArgs;
@@ -39,11 +36,6 @@ class LifecycleEventsListenerTest extends TestCase
      * @var LifecycleEventsDispatcher|MockObject
      */
     private $dispatcher;
-
-    /**
-     * @var Reader
-     */
-    private $reader;
 
     /**
      * @var EntityManagerInterface|MockObject

@@ -2,7 +2,6 @@
 
 namespace LifecycleEventsBundle\Tests\Attribute;
 
-use Doctrine\Common\Annotations\AnnotationException;
 use PHPUnit\Framework\TestCase;
 use W3C\LifecycleEventsBundle\Annotation\Update;
 use W3C\LifecycleEventsBundle\Tests\Attribute\Fixtures\User;

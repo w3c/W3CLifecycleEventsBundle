@@ -2,7 +2,6 @@
 
 namespace W3C\LifecycleEventsBundle\Tests\Services;
 
-use Doctrine\Common\Annotations\AnnotationReader;
 use Doctrine\ORM\Mapping\ClassMetadata;
 use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -36,8 +35,7 @@ class AnnotationGetterTest extends TestCase
             ->disableOriginalConstructor()
             ->getMock();
 
-        $reader = new AnnotationReader();
-        $this->annotationGetter = new AnnotationGetter($reader);
+        $this->annotationGetter = new AnnotationGetter();
     }
 
     public function testGetAnnotation()

@@ -2,9 +2,7 @@
 
 namespace W3C\LifecycleEventsBundle\Services;
 
-use Doctrine\Common\Annotations\Reader;
 use Doctrine\ORM\Mapping\ClassMetadata;
-use ReflectionClass;
 use ReflectionException;
 
 /**
