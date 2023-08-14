@@ -3,7 +3,7 @@
 namespace LifecycleEventsBundle\Tests\Attribute;
 
 use PHPUnit\Framework\TestCase;
-use W3C\LifecycleEventsBundle\Annotation\IgnoreClassUpdates;
+use W3C\LifecycleEventsBundle\Attribute\IgnoreClassUpdates;
 use W3C\LifecycleEventsBundle\Tests\Attribute\Fixtures\User;
 use W3C\LifecycleEventsBundle\Tests\Attribute\Fixtures\UserErrorIgnore;
 

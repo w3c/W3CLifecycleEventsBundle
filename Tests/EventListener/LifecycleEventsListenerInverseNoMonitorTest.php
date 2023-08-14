@@ -11,9 +11,9 @@ use Doctrine\ORM\Mapping\ClassMetadata;
 use Doctrine\ORM\UnitOfWork;
 use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\MockObject\MockObject;
-use W3C\LifecycleEventsBundle\Annotation\Update;
+use W3C\LifecycleEventsBundle\Attribute\Update;
 use W3C\LifecycleEventsBundle\EventListener\LifecycleEventsListener;
-use W3C\LifecycleEventsBundle\Services\AnnotationGetter;
+use W3C\LifecycleEventsBundle\Services\AttributeGetter;
 use W3C\LifecycleEventsBundle\Services\LifecycleEventsDispatcher;
 use W3C\LifecycleEventsBundle\Tests\Attribute\Fixtures\PersonNoMonitor;
 
@@ -178,7 +178,7 @@ class LifecycleEventsListenerInverseNoMonitorTest extends TestCase
                 }
             });
 
-        $this->listener = new LifecycleEventsListener($this->dispatcher, new AnnotationGetter());
+        $this->listener = new LifecycleEventsListener($this->dispatcher, new AttributeGetter());
     }
 
     public function testOneToOnePostPersist()

@@ -9,10 +9,10 @@ use Doctrine\ORM\Mapping\ClassMetadata;
 use Doctrine\ORM\UnitOfWork;
 use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\MockObject\MockObject;
-use W3C\LifecycleEventsBundle\Annotation\Change;
+use W3C\LifecycleEventsBundle\Attribute\Change;
 use W3C\LifecycleEventsBundle\EventListener\LifecycleEventsListener;
 use W3C\LifecycleEventsBundle\EventListener\LifecyclePropertyEventsListener;
-use W3C\LifecycleEventsBundle\Services\AnnotationGetter;
+use W3C\LifecycleEventsBundle\Services\AttributeGetter;
 use W3C\LifecycleEventsBundle\Services\LifecycleEventsDispatcher;
 use W3C\LifecycleEventsBundle\Tests\Attribute\Fixtures\User;
 use W3C\LifecycleEventsBundle\Tests\EventListener\Fixtures\OtherEntity;
@@ -75,7 +75,7 @@ class LifecyclePropertyEventsListenerTest extends TestCase
             ->setMethods(['getScheduledCollectionUpdates', 'getOwner', 'getMapping', 'getDeleteDiff', 'getInsertDiff'])
             ->getMock();
 
-        $this->listener = new LifecyclePropertyEventsListener($this->dispatcher, new AnnotationGetter());
+        $this->listener = new LifecyclePropertyEventsListener($this->dispatcher, new AttributeGetter());
     }
 
     public function testPreUpdateProperty()

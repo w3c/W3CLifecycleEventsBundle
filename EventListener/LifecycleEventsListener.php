@@ -8,12 +8,12 @@ use Doctrine\ORM\Event\PreUpdateEventArgs;
 use Doctrine\ORM\Mapping\MappingException;
 use Doctrine\ORM\PersistentCollection;
 use ReflectionException;
-use W3C\LifecycleEventsBundle\Annotation\Change;
-use W3C\LifecycleEventsBundle\Annotation\Create;
-use W3C\LifecycleEventsBundle\Annotation\Delete;
-use W3C\LifecycleEventsBundle\Annotation\IgnoreClassUpdates;
-use W3C\LifecycleEventsBundle\Annotation\Update;
-use W3C\LifecycleEventsBundle\Services\AnnotationGetter;
+use W3C\LifecycleEventsBundle\Attribute\Change;
+use W3C\LifecycleEventsBundle\Attribute\Create;
+use W3C\LifecycleEventsBundle\Attribute\Delete;
+use W3C\LifecycleEventsBundle\Attribute\IgnoreClassUpdates;
+use W3C\LifecycleEventsBundle\Attribute\Update;
+use W3C\LifecycleEventsBundle\Services\AttributeGetter;
 use W3C\LifecycleEventsBundle\Services\LifecycleEventsDispatcher;
 
 /**
@@ -24,18 +24,18 @@ use W3C\LifecycleEventsBundle\Services\LifecycleEventsDispatcher;
 class LifecycleEventsListener
 {
     private LifecycleEventsDispatcher $dispatcher;
-    private AnnotationGetter $annotationGetter;
+    private AttributeGetter $attributeGetter;
 
     /**
      * Constructs a new instance
      *
      * @param LifecycleEventsDispatcher $dispatcher the dispatcher to feed
-     * @param AnnotationGetter $annotationGetter
+     * @param AttributeGetter $attributeGetter
      */
-    public function __construct(LifecycleEventsDispatcher $dispatcher, AnnotationGetter $annotationGetter)
+    public function __construct(LifecycleEventsDispatcher $dispatcher, AttributeGetter $attributeGetter)
     {
         $this->dispatcher       = $dispatcher;
-        $this->annotationGetter = $annotationGetter;
+        $this->attributeGetter = $attributeGetter;
     }
 
     /**
@@ -50,10 +50,10 @@ class LifecycleEventsListener
     {
         $entity = $args->getObject();
         $class  = ClassUtils::getRealClass(get_class($entity));
-        /** @var Create $annotation */
-        $annotation = $this->annotationGetter->getAnnotation($class, Create::class);
-        if ($annotation) {
-            $this->dispatcher->addCreation($annotation, $args);
+        /** @var Create $attribute */
+        $attribute = $this->attributeGetter->getAnnotation($class, Create::class);
+        if ($attribute) {
+            $this->dispatcher->addCreation($attribute, $args);
         }
 
         $classMetadata = $args->getObjectManager()->getClassMetadata($class);
@@ -100,10 +100,10 @@ class LifecycleEventsListener
         $entity = $args->getObject();
         $class  = ClassUtils::getRealClass(get_class($entity));
 
-        /** @var Delete $annotation */
-        $annotation = $this->annotationGetter->getAnnotation($class, Delete::class);
-        if ($annotation) {
-            $this->dispatcher->addDeletion($annotation, $args);
+        /** @var Delete $attribute */
+        $attribute = $this->attributeGetter->getAnnotation($class, Delete::class);
+        if ($attribute) {
+            $this->dispatcher->addDeletion($attribute, $args);
         }
 
         $classMetadata = $args->getObjectManager()->getClassMetadata($class);
@@ -137,18 +137,18 @@ class LifecycleEventsListener
         $entity = $args->getObject();
         $class  = ClassUtils::getRealClass(get_class($entity));
 
-        /** @var Update $annotation */
-        $annotation = $this->annotationGetter->getAnnotation($class, Update::class);
+        /** @var Update $attribute */
+        $attribute = $this->attributeGetter->getAnnotation($class, Update::class);
 
         // Build properties and collections changes, also take care of inverse side
         $changeSet = $this->buildChangeSet($args, $entity);
 
-        $collectionChanges = $annotation && $annotation->monitor_collections ? $this->buildCollectionChanges($args, $entity) : [];
+        $collectionChanges = $attribute && $attribute->monitor_collections ? $this->buildCollectionChanges($args, $entity) : [];
 
-        if ($annotation) {
+        if ($attribute) {
             // Add changes to the entity
             $this->dispatcher->addUpdate(
-                $annotation,
+                $attribute,
                 $entity,
                 $changeSet,
                 $collectionChanges
@@ -181,7 +181,7 @@ class LifecycleEventsListener
                 continue;
             }
 
-            $ignoreAnnotation = $this->annotationGetter->getPropertyAnnotation(
+            $ignoreAnnotation = $this->attributeGetter->getPropertyAnnotation(
                 $classMetadata,
                 $property,
                 IgnoreClassUpdates::class
@@ -215,7 +215,7 @@ class LifecycleEventsListener
         $classMetadata = $args->getObjectManager()->getClassMetadata($realClass);
         $changes       = [];
         foreach (array_keys($args->getEntityChangeSet()) as $property) {
-            $ignoreAnnotation = $this->annotationGetter->getPropertyAnnotation(
+            $ignoreAnnotation = $this->attributeGetter->getPropertyAnnotation(
                 $classMetadata,
                 $property,
                 IgnoreClassUpdates::class
@@ -343,13 +343,13 @@ class LifecycleEventsListener
             $inverseMetadata = $em->getClassMetadata($oldClass);
 
             /** @var Update $targetAnnotation */
-            $targetAnnotation = $this->annotationGetter->getAnnotation($oldClass, Update::class);
+            $targetAnnotation = $this->attributeGetter->getAnnotation($oldClass, Update::class);
             /** @var Change $targetChangeAnnotation */
-            $targetChangeAnnotation = $this->annotationGetter->getPropertyAnnotation($inverseMetadata,
+            $targetChangeAnnotation = $this->attributeGetter->getPropertyAnnotation($inverseMetadata,
                 $inverseField, Change::class);
 
             $inverseMonitoredGlobal = $targetAnnotation && $targetAnnotation->monitor_owning
-                && !$this->annotationGetter->getPropertyAnnotation($inverseMetadata,
+                && !$this->attributeGetter->getPropertyAnnotation($inverseMetadata,
                     $inverseField, IgnoreClassUpdates::class);
 
             $inverseMonitoredField = $targetChangeAnnotation && $targetChangeAnnotation->monitor_owning;
@@ -399,13 +399,13 @@ class LifecycleEventsListener
             $inverseMetadata = $em->getClassMetadata($newClass);
 
             /** @var Update $targetAnnotation */
-            $targetAnnotation = $this->annotationGetter->getAnnotation($newClass, Update::class);
+            $targetAnnotation = $this->attributeGetter->getAnnotation($newClass, Update::class);
             /** @var Change $targetChangeAnnotation */
-            $targetChangeAnnotation = $this->annotationGetter->getPropertyAnnotation($inverseMetadata,
+            $targetChangeAnnotation = $this->attributeGetter->getPropertyAnnotation($inverseMetadata,
                 $inverseField, Change::class);
 
             $inverseMonitoredGlobal = $targetAnnotation && $targetAnnotation->monitor_owning
-                && !$this->annotationGetter->getPropertyAnnotation($inverseMetadata,
+                && !$this->attributeGetter->getPropertyAnnotation($inverseMetadata,
                     $inverseField, IgnoreClassUpdates::class);
 
             $inverseMonitoredField = $targetChangeAnnotation && $targetChangeAnnotation->monitor_owning;
@@ -456,13 +456,13 @@ class LifecycleEventsListener
             $inverseMetadata = $em->getClassMetadata($deletedClass);
 
             /** @var Update $targetAnnotation */
-            $targetAnnotation = $this->annotationGetter->getAnnotation($deletedClass, Update::class);
+            $targetAnnotation = $this->attributeGetter->getAnnotation($deletedClass, Update::class);
             /** @var Change $targetChangeAnnotation */
-            $targetChangeAnnotation = $this->annotationGetter->getPropertyAnnotation($inverseMetadata,
+            $targetChangeAnnotation = $this->attributeGetter->getPropertyAnnotation($inverseMetadata,
                 $inverseField, Change::class);
 
             $inverseMonitoredGlobal = $targetAnnotation && $targetAnnotation->monitor_owning
-                && !$this->annotationGetter->getPropertyAnnotation($inverseMetadata,
+                && !$this->attributeGetter->getPropertyAnnotation($inverseMetadata,
                     $inverseField, IgnoreClassUpdates::class);
 
             $inverseMonitoredField = $targetChangeAnnotation && $targetChangeAnnotation->monitor_owning;
@@ -513,13 +513,13 @@ class LifecycleEventsListener
             $inverseMetadata = $em->getClassMetadata($deletedClass);
 
             /** @var Update $targetAnnotation */
-            $targetAnnotation = $this->annotationGetter->getAnnotation($deletedClass, Update::class);
+            $targetAnnotation = $this->attributeGetter->getAnnotation($deletedClass, Update::class);
             /** @var Change $targetChangeAnnotation */
-            $targetChangeAnnotation = $this->annotationGetter->getPropertyAnnotation($inverseMetadata,
+            $targetChangeAnnotation = $this->attributeGetter->getPropertyAnnotation($inverseMetadata,
                 $inverseField, Change::class);
 
             $inverseMonitoredGlobal = $targetAnnotation && $targetAnnotation->monitor_owning
-                && !$this->annotationGetter->getPropertyAnnotation($inverseMetadata,
+                && !$this->attributeGetter->getPropertyAnnotation($inverseMetadata,
                     $inverseField, IgnoreClassUpdates::class);
 
             $inverseMonitoredField = $targetChangeAnnotation && $targetChangeAnnotation->monitor_owning;

@@ -1,6 +1,6 @@
 <?php
 
-namespace W3C\LifecycleEventsBundle\Annotation;
+namespace W3C\LifecycleEventsBundle\Attribute;
 
 /**
  * @author Jean-Guilhem Rouel <jean-gui@w3.org>

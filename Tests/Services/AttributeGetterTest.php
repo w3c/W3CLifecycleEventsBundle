@@ -5,21 +5,21 @@ namespace W3C\LifecycleEventsBundle\Tests\Services;
 use Doctrine\ORM\Mapping\ClassMetadata;
 use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\MockObject\MockObject;
-use W3C\LifecycleEventsBundle\Annotation\Change;
-use W3C\LifecycleEventsBundle\Annotation\Create;
-use W3C\LifecycleEventsBundle\Annotation\Update;
-use W3C\LifecycleEventsBundle\Services\AnnotationGetter;
+use W3C\LifecycleEventsBundle\Attribute\Change;
+use W3C\LifecycleEventsBundle\Attribute\Create;
+use W3C\LifecycleEventsBundle\Attribute\Update;
+use W3C\LifecycleEventsBundle\Services\AttributeGetter;
 use W3C\LifecycleEventsBundle\Tests\EventListener\Fixtures\UserChange;
 
 /**
  * @author Jean-Guilhem Rouel <jean-gui@w3.org>
  */
-class AnnotationGetterTest extends TestCase
+class AttributeGetterTest extends TestCase
 {
     /**
-     * @var AnnotationGetter
+     * @var AttributeGetter
      */
-    private $annotationGetter;
+    private $attributeGetter;
 
     /**
      * @var ClassMetadata|MockObject
@@ -35,24 +35,24 @@ class AnnotationGetterTest extends TestCase
             ->disableOriginalConstructor()
             ->getMock();
 
-        $this->annotationGetter = new AnnotationGetter();
+        $this->attributeGetter = new AttributeGetter();
     }
 
     public function testGetAnnotation()
     {
-        $annotation = $this->annotationGetter->getAnnotation(
+        $attribute = $this->attributeGetter->getAnnotation(
             'W3C\LifecycleEventsBundle\Tests\Attribute\Fixtures\Person',
             Update::class
         );
 
-        $this->assertEquals(Update::class, get_class($annotation));
+        $this->assertEquals(Update::class, get_class($attribute));
 
-        $annotation = $this->annotationGetter->getAnnotation(
+        $attribute = $this->attributeGetter->getAnnotation(
             'W3C\LifecycleEventsBundle\Tests\Attribute\Fixtures\Person',
             Create::class
         );
 
-        $this->assertNull($annotation);
+        $this->assertNull($attribute);
     }
 
     public function testGetPropertyAnnotationOk()
@@ -64,9 +64,9 @@ class AnnotationGetterTest extends TestCase
             ->with('name')
             ->willReturn(new \ReflectionProperty($user, 'name'));
 
-        $annotation = $this->annotationGetter->getPropertyAnnotation($this->classMetadata, 'name', Change::class);
+        $attribute = $this->attributeGetter->getPropertyAnnotation($this->classMetadata, 'name', Change::class);
 
-        $this->assertEquals(Change::class, get_class($annotation));
+        $this->assertEquals(Change::class, get_class($attribute));
     }
 
     public function testGetPropertyAnnotationNoAnnotation()
@@ -78,9 +78,9 @@ class AnnotationGetterTest extends TestCase
             ->with('email')
             ->willReturn(new \ReflectionProperty($user, 'email'));
 
-        $annotation = $this->annotationGetter->getPropertyAnnotation($this->classMetadata, 'email', Change::class);
+        $attribute = $this->attributeGetter->getPropertyAnnotation($this->classMetadata, 'email', Change::class);
 
-        $this->assertNull($annotation);
+        $this->assertNull($attribute);
     }
 
     public function testGetPropertyAnnotationNoField()
@@ -95,6 +95,6 @@ class AnnotationGetterTest extends TestCase
             ->method('getName')
             ->willReturn(UserChange::class);
 
-        $this->annotationGetter->getPropertyAnnotation($this->classMetadata, 'foo', Change::class);
+        $this->attributeGetter->getPropertyAnnotation($this->classMetadata, 'foo', Change::class);
     }
 }

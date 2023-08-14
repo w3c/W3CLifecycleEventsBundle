@@ -9,10 +9,10 @@ use W3C\LifecycleEventsBundle\Tests\Services\Fixtures\MySubscriber;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\EventDispatcher\EventDispatcher;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
-use W3C\LifecycleEventsBundle\Annotation\Change;
-use W3C\LifecycleEventsBundle\Annotation\Create;
-use W3C\LifecycleEventsBundle\Annotation\Delete;
-use W3C\LifecycleEventsBundle\Annotation\Update;
+use W3C\LifecycleEventsBundle\Attribute\Change;
+use W3C\LifecycleEventsBundle\Attribute\Create;
+use W3C\LifecycleEventsBundle\Attribute\Delete;
+use W3C\LifecycleEventsBundle\Attribute\Update;
 use W3C\LifecycleEventsBundle\Event\Definitions\LifecycleEvents;
 use W3C\LifecycleEventsBundle\Event\LifecycleCollectionChangedEvent;
 use W3C\LifecycleEventsBundle\Event\LifecycleDeletionEvent;
@@ -81,9 +81,9 @@ class LifecycleEventsDispatcherTest extends TestCase
     public function testDispatchCreationEvents()
     {
         $user = new User();
-        $annotation = new Create();
+        $attribute = new Create();
         $args = new LifecycleEventArgs($user, $this->objectManager);
-        $this->dispatcher->addCreation($annotation, $args);
+        $this->dispatcher->addCreation($attribute, $args);
 
         $this->assertCount(1, $this->dispatcher->getCreations());
 
@@ -104,12 +104,12 @@ class LifecycleEventsDispatcherTest extends TestCase
     public function testDispatchCreationEventsRecursive()
     {
         $user       = new User();
-        $annotation = new Create();
+        $attribute = new Create();
         $args       = new LifecycleEventArgs($user, $this->objectManager);
 
-        $this->sfDispatcher->addSubscriber(new MySubscriber($this->dispatcher, $annotation, $args));
+        $this->sfDispatcher->addSubscriber(new MySubscriber($this->dispatcher, $attribute, $args));
 
-        $this->dispatcher->addCreation($annotation, $args);
+        $this->dispatcher->addCreation($attribute, $args);
 
         $this->assertCount(1, $this->dispatcher->getCreations());
 
@@ -123,19 +123,19 @@ class LifecycleEventsDispatcherTest extends TestCase
     public function testDispatchCreationEventsCustom()
     {
         $user       = new User();
-        $annotation = new Create();
-        $annotation->event = 'test';
-        $annotation->class = MyLifecycleEvent::class;
+        $attribute = new Create();
+        $attribute->event = 'test';
+        $attribute->class = MyLifecycleEvent::class;
         $args       = new LifecycleEventArgs($user, $this->objectManager);
 
-        $this->dispatcher->addCreation($annotation, $args);
+        $this->dispatcher->addCreation($attribute, $args);
 
         $this->assertCount(1, $this->dispatcher->getCreations());
 
-        $expectedEvent = new $annotation->class($user);
+        $expectedEvent = new $attribute->class($user);
         $this->sfDispatcher->expects($this->once())
             ->method('dispatch')
-            ->with($expectedEvent, $annotation->event);
+            ->with($expectedEvent, $attribute->event);
 
         $this->dispatcher->dispatchEvents();
     }
@@ -143,7 +143,7 @@ class LifecycleEventsDispatcherTest extends TestCase
     public function testDispatchDeletionEvents()
     {
         $user       = new User();
-        $annotation = new Delete();
+        $attribute = new Delete();
         $args       = new LifecycleEventArgs($user, $this->objectManager);
 
         $this->objectManager->method('getClassMetadata')->willReturn($this->classMetadata);
@@ -154,7 +154,7 @@ class LifecycleEventsDispatcherTest extends TestCase
             ->method('getIdentifierValues')
             ->willReturn(['toto']);
 
-        $this->dispatcher->addDeletion($annotation, $args);
+        $this->dispatcher->addDeletion($attribute, $args);
 
         $this->assertCount(1, $this->dispatcher->getDeletions());
 
@@ -173,10 +173,10 @@ class LifecycleEventsDispatcherTest extends TestCase
     public function testDispatchDeletionEventsRecursive()
     {
         $user       = new User();
-        $annotation = new Delete();
+        $attribute = new Delete();
         $args       = new LifecycleEventArgs($user, $this->objectManager);
 
-        $this->sfDispatcher->addSubscriber(new MySubscriber($this->dispatcher, $annotation, $args));
+        $this->sfDispatcher->addSubscriber(new MySubscriber($this->dispatcher, $attribute, $args));
 
         $this->objectManager->method('getClassMetadata')->willReturn($this->classMetadata);
         $this->classMetadata->expects($this->once())
@@ -186,7 +186,7 @@ class LifecycleEventsDispatcherTest extends TestCase
             ->method('getIdentifierValues')
             ->willReturn(['toto']);
 
-        $this->dispatcher->addDeletion($annotation, $args);
+        $this->dispatcher->addDeletion($attribute, $args);
 
         $this->assertCount(1, $this->dispatcher->getDeletions());
 
@@ -200,9 +200,9 @@ class LifecycleEventsDispatcherTest extends TestCase
     public function testDispatchDeletionEventsCustom()
     {
         $user       = new User();
-        $annotation = new Delete();
-        $annotation->event = 'test';
-        $annotation->class = MyLifecycleEvent::class;
+        $attribute = new Delete();
+        $attribute->event = 'test';
+        $attribute->class = MyLifecycleEvent::class;
 
         $args       = new LifecycleEventArgs($user, $this->objectManager);
 
@@ -214,14 +214,14 @@ class LifecycleEventsDispatcherTest extends TestCase
             ->method('getIdentifierValues')
             ->willReturn(['toto']);
 
-        $this->dispatcher->addDeletion($annotation, $args);
+        $this->dispatcher->addDeletion($attribute, $args);
 
         $this->assertCount(1, $this->dispatcher->getDeletions());
 
-        $expectedEvent = new $annotation->class($user, ['name' => 'toto']);
+        $expectedEvent = new $attribute->class($user, ['name' => 'toto']);
         $this->sfDispatcher->expects($this->once())
             ->method('dispatch')
-            ->with($this->equalTo($expectedEvent), $annotation->event);
+            ->with($this->equalTo($expectedEvent), $attribute->event);
 
         $this->dispatcher->dispatchEvents();
     }
@@ -229,9 +229,9 @@ class LifecycleEventsDispatcherTest extends TestCase
     public function testDispatchUpdatesEvents()
     {
         $user       = new User();
-        $annotation = new Update();
+        $attribute = new Update();
         $this->dispatcher->addUpdate(
-            $annotation,
+            $attribute,
             $user,
             ['name' => ['foo', 'bar']],
             []
@@ -254,13 +254,13 @@ class LifecycleEventsDispatcherTest extends TestCase
     public function testDispatchUpdatesEventsRecursive()
     {
         $user       = new User();
-        $annotation = new Update();
+        $attribute = new Update();
         $args       = new LifecycleEventArgs($user, $this->objectManager);
 
-        $this->sfDispatcher->addSubscriber(new MySubscriber($this->dispatcher, $annotation, $args));
+        $this->sfDispatcher->addSubscriber(new MySubscriber($this->dispatcher, $attribute, $args));
 
         $this->dispatcher->addUpdate(
-            $annotation,
+            $attribute,
             $user,
             ['name' => ['foo', 'bar']],
             []
@@ -278,12 +278,12 @@ class LifecycleEventsDispatcherTest extends TestCase
     public function testDispatchUpdatesEventsCustom()
     {
         $user       = new User();
-        $annotation = new Update();
-        $annotation->event = 'test';
-        $annotation->class = MyUpdatedEvent::class;
+        $attribute = new Update();
+        $attribute->event = 'test';
+        $attribute->class = MyUpdatedEvent::class;
 
         $this->dispatcher->addUpdate(
-            $annotation,
+            $attribute,
             $user,
             ['name' => ['foo', 'bar']],
             []
@@ -291,10 +291,10 @@ class LifecycleEventsDispatcherTest extends TestCase
 
         $this->assertCount(1, $this->dispatcher->getUpdates());
 
-        $expectedEvent = new $annotation->class($user, ['name' => ['foo', 'bar']], []);
+        $expectedEvent = new $attribute->class($user, ['name' => ['foo', 'bar']], []);
         $this->sfDispatcher->expects($this->once())
             ->method('dispatch')
-            ->with($expectedEvent, $annotation->event);
+            ->with($expectedEvent, $attribute->event);
 
         $this->dispatcher->dispatchEvents();
     }
@@ -302,9 +302,9 @@ class LifecycleEventsDispatcherTest extends TestCase
     public function testDispatchPropertyChangeEvents()
     {
         $user       = new User();
-        $annotation = new Change();
+        $attribute = new Change();
         $this->dispatcher->addPropertyChange(
-            $annotation,
+            $attribute,
             $user,
             'name',
             'foo',
@@ -328,13 +328,13 @@ class LifecycleEventsDispatcherTest extends TestCase
     public function testDispatchPropertyChangeEventsRecursive()
     {
         $user       = new User();
-        $annotation = new Change();
+        $attribute = new Change();
         $args       = new LifecycleEventArgs($user, $this->objectManager);
 
-        $this->sfDispatcher->addSubscriber(new MySubscriber($this->dispatcher, $annotation, $args));
+        $this->sfDispatcher->addSubscriber(new MySubscriber($this->dispatcher, $attribute, $args));
 
         $this->dispatcher->addPropertyChange(
-            $annotation,
+            $attribute,
             $user,
             'name',
             'foo',
@@ -353,12 +353,12 @@ class LifecycleEventsDispatcherTest extends TestCase
     public function testDispatchPropertyChangeEventsCustom()
     {
         $user       = new User();
-        $annotation = new Change();
-        $annotation->event = 'test';
-        $annotation->class = MyPropertyChangedEvent::class;
+        $attribute = new Change();
+        $attribute->event = 'test';
+        $attribute->class = MyPropertyChangedEvent::class;
 
         $this->dispatcher->addPropertyChange(
-            $annotation,
+            $attribute,
             $user,
             'name',
             'foo',
@@ -367,21 +367,21 @@ class LifecycleEventsDispatcherTest extends TestCase
 
         $this->assertCount(1, $this->dispatcher->getPropertyChanges());
 
-        $expectedEvent = new $annotation->class($user, 'name', 'foo', 'bar');
+        $expectedEvent = new $attribute->class($user, 'name', 'foo', 'bar');
         $this->sfDispatcher->expects($this->once())
             ->method('dispatch')
-            ->with($expectedEvent, $annotation->event);
+            ->with($expectedEvent, $attribute->event);
 
         $this->dispatcher->dispatchEvents();
     }
     public function testDispatchCollectionChangeEvents()
     {
         $user       = new User();
-        $annotation = new Change();
+        $attribute = new Change();
         $deleted = [new User()];
         $inserted = [new User(), new User()];
         $this->dispatcher->addCollectionChange(
-            $annotation,
+            $attribute,
             $user,
             'friends',
             $deleted,
@@ -405,15 +405,15 @@ class LifecycleEventsDispatcherTest extends TestCase
     public function testDispatchCollectionChangeEventsRecursive()
     {
         $user       = new User();
-        $annotation = new Change();
+        $attribute = new Change();
         $args       = new LifecycleEventArgs($user, $this->objectManager);
 
-        $this->sfDispatcher->addSubscriber(new MySubscriber($this->dispatcher, $annotation, $args));
+        $this->sfDispatcher->addSubscriber(new MySubscriber($this->dispatcher, $attribute, $args));
 
         $deleted  = [new User()];
         $inserted = [new User(), new User()];
         $this->dispatcher->addCollectionChange(
-            $annotation,
+            $attribute,
             $user,
             'friends',
             $deleted,
@@ -432,14 +432,14 @@ class LifecycleEventsDispatcherTest extends TestCase
     public function testDispatchCollectionChangeEventsCustom()
     {
         $user       = new User();
-        $annotation = new Change();
-        $annotation->event = 'test';
-        $annotation->class = MyCollectionChangedEvent::class;
+        $attribute = new Change();
+        $attribute->event = 'test';
+        $attribute->class = MyCollectionChangedEvent::class;
 
         $deleted    = [new User()];
         $inserted   = [new User(), new User()];
         $this->dispatcher->addCollectionChange(
-            $annotation,
+            $attribute,
             $user,
             'friends',
             $deleted,
@@ -448,10 +448,10 @@ class LifecycleEventsDispatcherTest extends TestCase
 
         $this->assertCount(1, $this->dispatcher->getCollectionChanges());
 
-        $expectedEvent = new $annotation->class($user, 'friends', $deleted, $inserted);
+        $expectedEvent = new $attribute->class($user, 'friends', $deleted, $inserted);
         $this->sfDispatcher->expects($this->once())
             ->method('dispatch')
-            ->with($expectedEvent, $annotation->event);
+            ->with($expectedEvent, $attribute->event);
 
         $this->dispatcher->dispatchEvents();
     }
@@ -477,50 +477,50 @@ class LifecycleEventsDispatcherTest extends TestCase
     public function testGetUpdate()
     {
         $user       = new User();
-        $annotation = new Update();
+        $attribute = new Update();
 
         $this->assertNull($this->dispatcher->getUpdate($user));
 
         $this->dispatcher->addUpdate(
-            $annotation,
+            $attribute,
             new User(),
             ['name' => ['foo', 'bar']],
             []
         );
 
         $this->dispatcher->addUpdate(
-            $annotation,
+            $attribute,
             $user,
             ['name' => ['foo', 'bar']],
             []
         );
 
         $this->dispatcher->addUpdate(
-            $annotation,
+            $attribute,
             new User(),
             ['name' => ['foo', 'bar']],
             []
         );
 
-        $this->assertSame([1, [$annotation, $user, ['name' => ['foo', 'bar']], []]], $this->dispatcher->getUpdate($user));
+        $this->assertSame([1, [$attribute, $user, ['name' => ['foo', 'bar']], []]], $this->dispatcher->getUpdate($user));
     }
 
     public function testAddUpdate()
     {
         $user       = new User();
-        $annotation = new Update();
+        $attribute = new Update();
 
         $this->assertNull($this->dispatcher->getUpdate($user));
 
         $this->dispatcher->addUpdate(
-            $annotation,
+            $attribute,
             new User(),
             ['name' => ['old' => 'foo', 'new' => 'bar']],
             []
         );
 
         $this->dispatcher->addUpdate(
-            $annotation,
+            $attribute,
             $user,
             ['name' => ['old' => 'foo', 'new' => 'bar']],
             []
@@ -529,7 +529,7 @@ class LifecycleEventsDispatcherTest extends TestCase
         $this->assertCount(2, $this->dispatcher->getUpdates());
 
         $this->dispatcher->addUpdate(
-            $annotation,
+            $attribute,
             $user,
             [],
             ['friends' => ['deleted' => 'foo', 'inserted' => 'bar']]
@@ -539,7 +539,7 @@ class LifecycleEventsDispatcherTest extends TestCase
         $this->assertSame([
                 1,
                 [
-                    $annotation,
+                    $attribute,
                     $user,
                     ['name' => ['old' => 'foo', 'new' => 'bar']],
                     ['friends' => ['deleted' => 'foo', 'inserted' => 'bar']]
@@ -547,7 +547,7 @@ class LifecycleEventsDispatcherTest extends TestCase
             ], $this->dispatcher->getUpdate($user));
 
         $this->dispatcher->addUpdate(
-            $annotation,
+            $attribute,
             $user,
             ['foo' => ['old' => 'a', 'new' => 'b']],
             []
@@ -557,7 +557,7 @@ class LifecycleEventsDispatcherTest extends TestCase
         $this->assertSame([
             1,
             [
-                $annotation,
+                $attribute,
                 $user,
                 ['name' => ['old' => 'foo', 'new' => 'bar'], 'foo' => ['old' => 'a', 'new' => 'b']],
                 ['friends' => ['deleted' => 'foo', 'inserted' => 'bar']]
@@ -570,12 +570,12 @@ class LifecycleEventsDispatcherTest extends TestCase
         $father     = new Person();
         $son1       = new Person();
         $son2       = new Person();
-        $annotation = new Change();
+        $attribute = new Change();
 
         $this->assertNull($this->dispatcher->getCollectionChange($father, 'sons'));
 
         $this->dispatcher->addCollectionChange(
-            $annotation,
+            $attribute,
             new Person(),
             'sons',
             [new Person(), new Person()],
@@ -583,7 +583,7 @@ class LifecycleEventsDispatcherTest extends TestCase
         );
 
         $this->dispatcher->addCollectionChange(
-            $annotation,
+            $attribute,
             $father,
             'sons',
             [$son1],
@@ -591,14 +591,14 @@ class LifecycleEventsDispatcherTest extends TestCase
         );
 
         $this->dispatcher->addCollectionChange(
-            $annotation,
+            $attribute,
             new Person(),
             'foo',
             [],
             ['bar']
         );
 
-        $this->assertSame([1, [$annotation, $father, 'sons', [$son1], [$son2]]],
+        $this->assertSame([1, [$attribute, $father, 'sons', [$son1], [$son2]]],
             $this->dispatcher->getCollectionChange($father, 'sons'));
     }
 
@@ -608,12 +608,12 @@ class LifecycleEventsDispatcherTest extends TestCase
         $son1       = new Person();
         $son2       = new Person();
         $son3       = new Person();
-        $annotation = new Change();
+        $attribute = new Change();
 
         $this->assertNull($this->dispatcher->getCollectionChange($father, 'sons'));
 
         $this->dispatcher->addCollectionChange(
-            $annotation,
+            $attribute,
             new Person(),
             'sons',
             [new Person(), new Person()],
@@ -621,7 +621,7 @@ class LifecycleEventsDispatcherTest extends TestCase
         );
 
         $this->dispatcher->addCollectionChange(
-            $annotation,
+            $attribute,
             $father,
             'sons',
             [],
@@ -631,7 +631,7 @@ class LifecycleEventsDispatcherTest extends TestCase
         $this->assertCount(2, $this->dispatcher->getCollectionChanges());
 
         $this->dispatcher->addCollectionChange(
-            $annotation,
+            $attribute,
             $father,
             'sons',
             [$son1],
@@ -642,7 +642,7 @@ class LifecycleEventsDispatcherTest extends TestCase
         $this->assertSame([
             1,
             [
-                $annotation,
+                $attribute,
                 $father,
                 'sons',
                 [$son1],
@@ -651,7 +651,7 @@ class LifecycleEventsDispatcherTest extends TestCase
         ], $this->dispatcher->getCollectionChange($father, 'sons'));
 
         $this->dispatcher->addCollectionChange(
-            $annotation,
+            $attribute,
             $father,
             'foo',
             [$son1],
@@ -662,7 +662,7 @@ class LifecycleEventsDispatcherTest extends TestCase
         $this->assertSame([
             1,
             [
-                $annotation,
+                $attribute,
                 $father,
                 'sons',
                 [$son1],

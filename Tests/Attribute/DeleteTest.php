@@ -3,7 +3,7 @@
 namespace LifecycleEventsBundle\Tests\Attribute;
 
 use PHPUnit\Framework\TestCase;
-use W3C\LifecycleEventsBundle\Annotation\Delete;
+use W3C\LifecycleEventsBundle\Attribute\Delete;
 use W3C\LifecycleEventsBundle\Tests\Attribute\Fixtures\User;
 use W3C\LifecycleEventsBundle\Tests\Attribute\Fixtures\UserClass;
 use W3C\LifecycleEventsBundle\Tests\Attribute\Fixtures\UserErrorDelete;
