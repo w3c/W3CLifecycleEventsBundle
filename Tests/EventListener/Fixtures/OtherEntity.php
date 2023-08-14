@@ -9,8 +9,6 @@ use W3C\LifecycleEventsBundle\Annotation as On;
  */
 class OtherEntity
 {
-    /**
-     * @On\Change()
-     */
+    #[On\Change]
     public $foo;
 }

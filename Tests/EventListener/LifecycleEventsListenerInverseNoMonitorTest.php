@@ -17,7 +17,7 @@ use W3C\LifecycleEventsBundle\Annotation\Update;
 use W3C\LifecycleEventsBundle\EventListener\LifecycleEventsListener;
 use W3C\LifecycleEventsBundle\Services\AnnotationGetter;
 use W3C\LifecycleEventsBundle\Services\LifecycleEventsDispatcher;
-use W3C\LifecycleEventsBundle\Tests\Annotation\Fixtures\PersonNoMonitor;
+use W3C\LifecycleEventsBundle\Tests\Attribute\Fixtures\PersonNoMonitor;
 
 /**
  * @author Jean-Guilhem Rouel <jean-gui@w3.org>
@@ -64,9 +64,6 @@ class LifecycleEventsListenerInverseNoMonitorTest extends TestCase
         $this->father = new PersonNoMonitor();
         $this->friend1 = new PersonNoMonitor();
         $this->friend2 = new PersonNoMonitor();
-
-        $loader = require __DIR__ . '/../../vendor/autoload.php';
-        AnnotationRegistry::registerLoader(array($loader, 'loadClass'));
 
         $this->dispatcher = $this
             ->getMockBuilder(LifecycleEventsDispatcher::class)

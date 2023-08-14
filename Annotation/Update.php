@@ -11,22 +11,13 @@ use W3C\LifecycleEventsBundle\Event\LifecycleUpdateEvent;
  *
  * @author Jean-Guilhem Rouel <jean-gui@w3.org>
  */
+#[\Attribute(\Attribute::TARGET_CLASS)]
 class Update
 {
-    /**
-     * @var string
-     */
-    public $event = LifecycleEvents::UPDATED;
-
-    /**
-     * @var string
-     */
-    public $class = LifecycleUpdateEvent::class;
-
-    /**
-     * @var bool
-     */
-    public $monitor_collections = true;
-
-    public $monitor_owning = false;
+    public function __construct(
+        public string $event = LifecycleEvents::UPDATED,
+        public string $class = LifecycleUpdateEvent::class,
+        public bool $monitor_collections = true,
+        public bool $monitor_owning = false,
+    ){}
 }

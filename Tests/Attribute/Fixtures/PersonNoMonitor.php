@@ -1,14 +1,13 @@
 <?php
 
-namespace W3C\LifecycleEventsBundle\Tests\Annotation\Fixtures;
+namespace W3C\LifecycleEventsBundle\Tests\Attribute\Fixtures;
 
 use W3C\LifecycleEventsBundle\Annotation as On;
 
 /**
- * @On\Update()
- *
  * @author Jean-Guilhem Rouel <jean-gui@w3.org>
  */
+#[On\Update]
 class PersonNoMonitor
 {
     public $name;
@@ -25,8 +24,8 @@ class PersonNoMonitor
 
     /**
      * @ ORM\ManyToOne(targetEntity="Person", inversedBy="sons")
-     * @On\Change()
      */
+    #[On\Change]
     public $father;
 
     /**

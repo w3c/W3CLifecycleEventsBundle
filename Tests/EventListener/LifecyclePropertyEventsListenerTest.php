@@ -2,9 +2,6 @@
 
 namespace W3C\LifecycleEventsBundle\Tests\EventListener;
 
-use Doctrine\Common\Annotations\AnnotationReader;
-use Doctrine\Common\Annotations\AnnotationRegistry;
-use Doctrine\Common\Annotations\Reader;
 use Doctrine\Common\Util\ClassUtils;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\Event\PreUpdateEventArgs;
@@ -13,12 +10,11 @@ use Doctrine\ORM\UnitOfWork;
 use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\MockObject\MockObject;
 use W3C\LifecycleEventsBundle\Annotation\Change;
-use W3C\LifecycleEventsBundle\Annotation\Update;
 use W3C\LifecycleEventsBundle\EventListener\LifecycleEventsListener;
 use W3C\LifecycleEventsBundle\EventListener\LifecyclePropertyEventsListener;
 use W3C\LifecycleEventsBundle\Services\AnnotationGetter;
 use W3C\LifecycleEventsBundle\Services\LifecycleEventsDispatcher;
-use W3C\LifecycleEventsBundle\Tests\Annotation\Fixtures\User;
+use W3C\LifecycleEventsBundle\Tests\Attribute\Fixtures\User;
 use W3C\LifecycleEventsBundle\Tests\EventListener\Fixtures\OtherEntity;
 use W3C\LifecycleEventsBundle\Tests\EventListener\Fixtures\UserChange;
 use W3C\LifecycleEventsBundle\Tests\EventListener\Fixtures\UserClassUpdateCollection;
@@ -40,11 +36,6 @@ class LifecyclePropertyEventsListenerTest extends TestCase
     private $dispatcher;
 
     /**
-     * @var Reader
-     */
-    private $reader;
-
-    /**
      * @var EntityManagerInterface|MockObject
      */
     private $manager;
@@ -62,11 +53,6 @@ class LifecyclePropertyEventsListenerTest extends TestCase
     public function setUp() : void
     {
         parent::setUp();
-
-        $loader = require __DIR__ . '/../../vendor/autoload.php';
-        AnnotationRegistry::registerLoader(array($loader, 'loadClass'));
-
-        $this->reader = new AnnotationReader();
 
         $this->dispatcher = $this
             ->getMockBuilder(LifecycleEventsDispatcher::class)
@@ -89,7 +75,7 @@ class LifecyclePropertyEventsListenerTest extends TestCase
             ->setMethods(['getScheduledCollectionUpdates', 'getOwner', 'getMapping', 'getDeleteDiff', 'getInsertDiff'])
             ->getMock();
 
-        $this->listener = new LifecyclePropertyEventsListener($this->dispatcher, new AnnotationGetter($this->reader));
+        $this->listener = new LifecyclePropertyEventsListener($this->dispatcher, new AnnotationGetter());
     }
 
     public function testPreUpdateProperty()
@@ -98,11 +84,8 @@ class LifecyclePropertyEventsListenerTest extends TestCase
         $changeSet = ['name' => ['foo', 'bar']];
         $event = new PreUpdateEventArgs($user, $this->manager, $changeSet);
 
-        /** @var Update $annotation */
-        $annotation = $this->reader->getPropertyAnnotation(
-            new \ReflectionProperty(get_class($user), 'name'),
-            Change::class
-        );
+        $reflection = new \ReflectionProperty(get_class($user), 'name');
+        $attribute = $reflection->getAttributes(Change::class)[0]->newInstance();
 
         $this->manager->method('getUnitOfWork')->willReturn($this->uow);
         $this->uow->method('getScheduledCollectionUpdates')->willReturn([]);
@@ -119,7 +102,7 @@ class LifecyclePropertyEventsListenerTest extends TestCase
 
         $this->dispatcher->expects($this->once())
             ->method('addPropertyChange')
-            ->with($annotation, $user, 'name', 'foo', 'bar');
+            ->with($attribute, $user, 'name', 'foo', 'bar');
 
         $this->listener->preUpdate($event);
     }
@@ -130,11 +113,9 @@ class LifecyclePropertyEventsListenerTest extends TestCase
         $changeSet = [];
         $event     = new PreUpdateEventArgs($user, $this->manager, $changeSet);
 
-        /** @var Update $annotation */
-        $annotation = $this->reader->getPropertyAnnotation(
-            new \ReflectionProperty(get_class($user), 'name'),
-            Change::class
-        );
+        $reflection = new \ReflectionProperty(get_class($user), 'name');
+        $attribute = $reflection->getAttributes(Change::class)[0]->newInstance();
+
 
         $this->manager->method('getUnitOfWork')->willReturn($this->uow);
         $this->uow->method('getScheduledCollectionUpdates')->willReturn([$this->uow]);
@@ -157,7 +138,7 @@ class LifecyclePropertyEventsListenerTest extends TestCase
 
         $this->dispatcher->expects($this->once())
             ->method('addCollectionChange')
-            ->with($annotation, $user, 'friends', $deleted, $inserted);
+            ->with($attribute, $user, 'friends', $deleted, $inserted);
 
         $this->listener->preUpdate($event);
     }

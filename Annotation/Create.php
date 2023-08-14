@@ -11,16 +11,11 @@ use W3C\LifecycleEventsBundle\Event\LifecycleEvent;
  *
  * @author Jean-Guilhem Rouel <jean-gui@w3.org>
  */
+#[\Attribute(\Attribute::TARGET_CLASS)]
 class Create
 {
-    /**
-     * @var string
-     */
-    public $event = LifecycleEvents::CREATED;
-
-    /**
-     * @var string
-     */
-    public $class = LifecycleEvent::class;
-
+    public function __construct(
+        public string $event = LifecycleEvents::CREATED,
+        public string $class = LifecycleEvent::class,
+    ){}
 }

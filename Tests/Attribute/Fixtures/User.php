@@ -1,19 +1,20 @@
 <?php
 
-namespace W3C\LifecycleEventsBundle\Tests\EventListener\Fixtures;
+namespace W3C\LifecycleEventsBundle\Tests\Attribute\Fixtures;
 
 use W3C\LifecycleEventsBundle\Annotation as On;
 
 /**
  * @author Jean-Guilhem Rouel <jean-gui@w3.org>
  */
-class UserChange
+#[On\Create]
+#[On\Delete]
+#[On\Update]
+class User
 {
     #[On\Change]
+    #[On\IgnoreClassUpdates]
     public $name;
 
-    public $email;
-
-    #[On\Change]
     public $friends;
 }

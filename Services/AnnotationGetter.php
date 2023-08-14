@@ -14,13 +14,6 @@ use ReflectionException;
  */
 class AnnotationGetter
 {
-    private Reader $reader;
-
-    public function __construct(Reader $reader)
-    {
-        $this->reader = $reader;
-    }
-
     /**
      * Get a class-level annotation
      *
@@ -32,10 +25,14 @@ class AnnotationGetter
      */
     public function getAnnotation(string $class, string $annotationClass): ?object
     {
-        return $this->reader->getClassAnnotation(
-            new ReflectionClass($class),
-            $annotationClass
-        );
+        $reflection = new \ReflectionClass($class);
+        $attributes = $reflection->getAttributes($annotationClass);
+
+        if (\count($attributes) === 0) {
+            return null;
+        }
+
+        return $attributes[0]->newInstance();
     }
 
     /**
@@ -50,10 +47,17 @@ class AnnotationGetter
      */
     public function getPropertyAnnotation(ClassMetadata $classMetadata, string $field, string $annotationClass): ?object
     {
+
         $reflProperty = $classMetadata->getReflectionProperty($field);
 
         if ($reflProperty) {
-            return $this->reader->getPropertyAnnotation($reflProperty, $annotationClass);
+            $attributes = $reflProperty->getAttributes($annotationClass);
+
+            if (\count($attributes) === 0) {
+                return null;
+            }
+
+            return $attributes[0]->newInstance();
         }
 
         throw new ReflectionException(

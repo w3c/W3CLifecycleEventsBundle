@@ -8,6 +8,7 @@ use Doctrine\Common\Annotations\Reader;
 use Doctrine\Common\Util\ClassUtils;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\Event\LifecycleEventArgs;
+use Doctrine\ORM\Event\PostPersistEventArgs;
 use Doctrine\ORM\Event\PreUpdateEventArgs;
 use Doctrine\ORM\Mapping\ClassMetadata;
 use Doctrine\ORM\UnitOfWork;
@@ -17,7 +18,7 @@ use W3C\LifecycleEventsBundle\Annotation\Update;
 use W3C\LifecycleEventsBundle\EventListener\LifecycleEventsListener;
 use W3C\LifecycleEventsBundle\Services\AnnotationGetter;
 use W3C\LifecycleEventsBundle\Services\LifecycleEventsDispatcher;
-use W3C\LifecycleEventsBundle\Tests\Annotation\Fixtures\User;
+use W3C\LifecycleEventsBundle\Tests\Attribute\Fixtures\User;
 use W3C\LifecycleEventsBundle\Tests\EventListener\Fixtures\UserClassUpdateCollection;
 use W3C\LifecycleEventsBundle\Tests\EventListener\Fixtures\UserClassUpdateIgnoreCollection;
 use W3C\LifecycleEventsBundle\Tests\EventListener\Fixtures\UserClassUpdateIgnoreNoCollection;
@@ -58,11 +59,6 @@ class LifecycleEventsListenerTest extends TestCase
     {
         parent::setUp();
 
-        $loader = require __DIR__ . '/../../vendor/autoload.php';
-        AnnotationRegistry::registerLoader(array($loader, 'loadClass'));
-
-        $this->reader = new AnnotationReader();
-
         $this->dispatcher = $this
             ->getMockBuilder(LifecycleEventsDispatcher::class)
             ->disableOriginalConstructor()
@@ -78,13 +74,13 @@ class LifecycleEventsListenerTest extends TestCase
             ->disableOriginalConstructor()
             ->getMock();
 
-        $this->listener = new LifecycleEventsListener($this->dispatcher, new AnnotationGetter($this->reader));
+        $this->listener = new LifecycleEventsListener($this->dispatcher, new AnnotationGetter());
     }
 
     public function testPostPersist()
     {
         $user = new User();
-        $event = new LifecycleEventArgs($user, $this->manager);
+        $event = new PostPersistEventArgs($user, $this->manager);
 
         $this->dispatcher->expects($this->once())
             ->method('addCreation');
@@ -104,7 +100,7 @@ class LifecycleEventsListenerTest extends TestCase
     public function testPostPersistNoCreationAnnotation()
     {
         $user  = new UserNoAnnotation();
-        $event = new LifecycleEventArgs($user, $this->manager);
+        $event = new PostPersistEventArgs($user, $this->manager);
 
         $this->dispatcher->expects($this->never())
             ->method('addCreation');
@@ -207,11 +203,8 @@ class LifecycleEventsListenerTest extends TestCase
         $changeSet = ['name' => [null, 'foo']];
         $event = new PreUpdateEventArgs($user, $this->manager, $changeSet);
 
-        /** @var Update $annotation */
-        $annotation = $this->reader->getClassAnnotation(
-            new \ReflectionClass($user),
-            Update::class
-        );
+        $reflection = new \ReflectionClass($user);
+        $attribute = $reflection->getAttributes(Update::class)[0]->newInstance();
 
         $this->manager
             ->method('getClassMetadata')
@@ -225,7 +218,7 @@ class LifecycleEventsListenerTest extends TestCase
 
         $this->dispatcher->expects($this->once())
             ->method('addUpdate')
-            ->with($annotation, $user, ['name' => ['old' => null, 'new' => 'foo']], []);
+            ->with($attribute, $user, ['name' => ['old' => null, 'new' => 'foo']], []);
 
         $this->listener->preUpdate($event);
     }
@@ -236,11 +229,8 @@ class LifecycleEventsListenerTest extends TestCase
         $changeSet = ['name' => [null, 'foo']];
         $event     = new PreUpdateEventArgs($user, $this->manager, $changeSet);
 
-        /** @var Update $annotation */
-        $annotation = $this->reader->getClassAnnotation(
-            new \ReflectionClass($user),
-            Update::class
-        );
+        $reflection = new \ReflectionClass($user);
+        $attribute = $reflection->getAttributes(Update::class)[0]->newInstance();
 
         $this->manager
             ->method('getClassMetadata')
@@ -254,7 +244,7 @@ class LifecycleEventsListenerTest extends TestCase
 
         $this->dispatcher->expects($this->once())
             ->method('addUpdate')
-            ->with($annotation, $user, [], []);
+            ->with($attribute, $user, [], []);
 
         $this->listener->preUpdate($event);
     }
@@ -265,11 +255,8 @@ class LifecycleEventsListenerTest extends TestCase
         $changeSet = [];
         $event     = new PreUpdateEventArgs($user, $this->manager, $changeSet);
 
-        /** @var Update $annotation */
-        $annotation = $this->reader->getClassAnnotation(
-            new \ReflectionClass($user),
-            Update::class
-        );
+        $reflection = new \ReflectionClass($user);
+        $attribute = $reflection->getAttributes(Update::class)[0]->newInstance();
 
         $uow = $this
             ->getMockBuilder(UnitOfWork::class)
@@ -298,7 +285,7 @@ class LifecycleEventsListenerTest extends TestCase
 
         $this->dispatcher->expects($this->once())
             ->method('addUpdate')
-            ->with($annotation, $user, [], []);
+            ->with($attribute, $user, [], []);
 
         $this->listener->preUpdate($event);
     }
@@ -309,11 +296,8 @@ class LifecycleEventsListenerTest extends TestCase
         $changeSet = [];
         $event     = new PreUpdateEventArgs($user, $this->manager, $changeSet);
 
-        /** @var Update $annotation */
-        $annotation = $this->reader->getClassAnnotation(
-            new \ReflectionClass($user),
-            Update::class
-        );
+        $reflection = new \ReflectionClass($user);
+        $attribute = $reflection->getAttributes(Update::class)[0]->newInstance();
 
         $uow = $this
             ->getMockBuilder(UnitOfWork::class)
@@ -332,7 +316,7 @@ class LifecycleEventsListenerTest extends TestCase
 
         $this->dispatcher->expects($this->once())
             ->method('addUpdate')
-            ->with($annotation, $user, [], ['friends' => ['deleted' => $deleted, 'inserted' => $inserted]]);
+            ->with($attribute, $user, [], ['friends' => ['deleted' => $deleted, 'inserted' => $inserted]]);
 
         $this->manager
             ->method('getClassMetadata')
@@ -354,11 +338,8 @@ class LifecycleEventsListenerTest extends TestCase
         $changeSet = [];
         $event     = new PreUpdateEventArgs($user, $this->manager, $changeSet);
 
-        /** @var Update $annotation */
-        $annotation = $this->reader->getClassAnnotation(
-            new \ReflectionClass($user),
-            Update::class
-        );
+        $reflection = new \ReflectionClass($user);
+        $attribute = $reflection->getAttributes(Update::class)[0]->newInstance();
 
         $uow = $this
             ->getMockBuilder(UnitOfWork::class)
@@ -377,7 +358,7 @@ class LifecycleEventsListenerTest extends TestCase
 
         $this->dispatcher->expects($this->once())
             ->method('addUpdate')
-            ->with($annotation, $user, [], []);
+            ->with($attribute, $user, [], []);
 
         $this->listener->preUpdate($event);
     }
@@ -390,11 +371,8 @@ class LifecycleEventsListenerTest extends TestCase
         $changeSet = [];
         $event     = new PreUpdateEventArgs($user, $this->manager, $changeSet);
 
-        /** @var Update $annotation */
-        $annotation = $this->reader->getClassAnnotation(
-            new \ReflectionClass($user),
-            Update::class
-        );
+        $reflection = new \ReflectionClass($user);
+        $attribute = $reflection->getAttributes(Update::class)[0]->newInstance();
 
         $uow = $this
             ->getMockBuilder(UnitOfWork::class)
@@ -427,7 +405,7 @@ class LifecycleEventsListenerTest extends TestCase
 
         $this->dispatcher->expects($this->never())
             ->method('addUpdate')
-            ->with($annotation, $user, [], null);
+            ->with($attribute, $user, [], null);
 
         $this->listener->preUpdate($event);
     }

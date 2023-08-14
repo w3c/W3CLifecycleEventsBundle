@@ -4,17 +4,13 @@ namespace W3C\LifecycleEventsBundle\Tests\EventListener\Fixtures;
 
 use W3C\LifecycleEventsBundle\Annotation as On;
 
-/**
- * @On\Update()
- */
+#[On\Update]
 class UserClassUpdateIgnoreCollection
 {
     public $name;
 
     public $email;
 
-    /**
-     * @On\IgnoreClassUpdates()
-     */
+    #[On\IgnoreClassUpdates]
     public $friends;
 }

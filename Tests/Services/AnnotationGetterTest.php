@@ -43,14 +43,14 @@ class AnnotationGetterTest extends TestCase
     public function testGetAnnotation()
     {
         $annotation = $this->annotationGetter->getAnnotation(
-            'W3C\LifecycleEventsBundle\Tests\Annotation\Fixtures\Person',
+            'W3C\LifecycleEventsBundle\Tests\Attribute\Fixtures\Person',
             Update::class
         );
 
         $this->assertEquals(Update::class, get_class($annotation));
 
         $annotation = $this->annotationGetter->getAnnotation(
-            'W3C\LifecycleEventsBundle\Tests\Annotation\Fixtures\Person',
+            'W3C\LifecycleEventsBundle\Tests\Attribute\Fixtures\Person',
             Create::class
         );
 
