@@ -6,9 +6,6 @@ use W3C\LifecycleEventsBundle\Event\Definitions\LifecycleEvents;
 use W3C\LifecycleEventsBundle\Event\LifecycleEvent;
 
 /**
- * @Annotation
- * @Target("CLASS")
- *
  * @author Jean-Guilhem Rouel <jean-gui@w3.org>
  */
 #[\Attribute(\Attribute::TARGET_CLASS)]
