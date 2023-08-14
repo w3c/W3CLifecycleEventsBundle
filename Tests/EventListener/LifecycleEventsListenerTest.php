@@ -5,7 +5,6 @@ namespace W3C\LifecycleEventsBundle\Tests\EventListener;
 use Doctrine\Common\Util\ClassUtils;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\Event\LifecycleEventArgs;
-use Doctrine\ORM\Event\PostPersistEventArgs;
 use Doctrine\ORM\Event\PreUpdateEventArgs;
 use Doctrine\ORM\Mapping\ClassMetadata;
 use Doctrine\ORM\UnitOfWork;
@@ -72,7 +71,7 @@ class LifecycleEventsListenerTest extends TestCase
     public function testPostPersist()
     {
         $user = new User();
-        $event = new PostPersistEventArgs($user, $this->manager);
+        $event = new LifecycleEventArgs($user, $this->manager);
 
         $this->dispatcher->expects($this->once())
             ->method('addCreation');
@@ -92,7 +91,7 @@ class LifecycleEventsListenerTest extends TestCase
     public function testPostPersistNoCreationAnnotation()
     {
         $user  = new UserNoAnnotation();
-        $event = new PostPersistEventArgs($user, $this->manager);
+        $event = new LifecycleEventArgs($user, $this->manager);
 
         $this->dispatcher->expects($this->never())
             ->method('addCreation');

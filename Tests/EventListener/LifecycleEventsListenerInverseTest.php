@@ -6,7 +6,6 @@ use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Util\ClassUtils;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\Event\LifecycleEventArgs;
-use Doctrine\ORM\Event\PostPersistEventArgs;
 use Doctrine\ORM\Event\PreUpdateEventArgs;
 use Doctrine\ORM\Mapping\ClassMetadata;
 use Doctrine\ORM\UnitOfWork;
@@ -185,7 +184,7 @@ class LifecycleEventsListenerInverseTest extends TestCase
 
     public function testOneToOnePostPersist()
     {
-        $event = new PostPersistEventArgs($this->person, $this->manager);
+        $event = new LifecycleEventArgs($this->person, $this->manager);
 
         $this->manager
             ->method('getClassMetadata')
