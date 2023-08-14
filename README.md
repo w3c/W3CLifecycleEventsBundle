@@ -20,7 +20,7 @@ not the second, resulting in no entities being saved at all
 This bundle aims at circumventing these issues by providing means to fire entity creation, deletion and update events 
 after a successful flush or whenever needed.
 
-It also provides a set of annotation to configure what events should be sent and when.
+It also provides a set of attributes to configure what events should be sent and when.
 
 This bundle was partially inspired by @kriswallsmith's talk
 ["Matters of State"](https://www.youtube.com/watch?v=lEiwP4w6mf4).
@@ -56,16 +56,16 @@ Usage
 ### Annotations
 
 For this bundle to do anything interesting, it is necessary to annotate entities you want to monitor.
-There are five annotations. Three of them apply to classes (`@Create`, `@Delete` and `@Update`) and the remaining two to
-properties (`@Change`, `@IgnoreClassUpdates`).
+There are five attributes. Three of them apply to classes (`#[On\Create]`, `#[On\Delete]` and `#[On\Update]`) and the remaining two to
+properties (`#[On\Change]`, `#[On\IgnoreClassUpdates]`).
 
-All annotations live in the namespace `W3C\LifecycleEventsBundle\Annotation`, so it is recommended to import it:
+All attributes live in the namespace `W3C\LifecycleEventsBundle\Attribute`, so it is recommended to import it:
 ``` php
 <?php
-use W3C\LifecycleEventsBundle\Annotation as On;
+use W3C\LifecycleEventsBundle\Attribute as On;
 ```
 
-#### `@On\Create` 
+#### `#[On\Create]` 
 
 Monitors the creation of new entities. It accepts the following parameters:
 - `event`: the event being sent every time an entity is created (`w3c.lifecycle.created` by default)
@@ -80,7 +80,7 @@ must have a constructor with the following signature:
 public function __construct($entity)
 ```
 
-#### `@On\Delete`
+#### `#[On\Delete]`
 
 Monitors the deletion (or soft deletion, if you use Doctrine Extensions) of entities. It accepts the following parameters:
 - `event`: the event being sent every time an entity is deleted (`w3c.lifecycle.deleted` by default)
@@ -96,7 +96,7 @@ must have a constructor with the following signature:
 public function __construct($entity, $identifier)
 ```
 
-#### `@On\Update`
+#### `#[On\Update]`
 
 Monitors updates to entities. It accepts the following parameters:
 - `event`: the event being sent (`w3c.lifecycle.updated` by default) every time an entity is updated
@@ -112,10 +112,10 @@ must have a constructor with the following signature:
  */
 public function __construct($entity, array $propertiesChangeSet = null, array $collectionsChangeSet = null)
 ```
-- `monitor_collections`: whether the annotation should monitor changes to collection fields. Defaults to true
+- `monitor_collections`: whether the attribute should monitor changes to collection fields. Defaults to true
 - `monitor_owning`: whether owning side relationship changes should be also monitored as inverse side changes. Defaults to false
 
-#### `@On\Change`
+#### `#[On\Change]`
 
 Monitors whenever an entity field (property or collection) changes. It accepts the following parameters:
 - `event`: the event being sent (`w3c.lifecycle.property_changed` or `w3c.lifecycle.collection_changed` by default) 
@@ -147,15 +147,15 @@ and for collections:
 public function __construct($entity, $property, $deletedElements = null, $insertedElements = null)
 ```
 - `monitor_owning`: whether to record changes to this field when owning sides change (defaults to `false`). Using
-`@On\Change` on inverse side of relationships won't trigger any events unless this paramter is set to true. This
-parameter is likely to be removed in the next major version and act as if it was set to `true` since when the 
-annotation is added to the inverse side of relationship, it is obvious it means that you want changes to owning side to
+`#[On\Change]` on inverse side of relationships won't trigger any events unless this paramter is set to true. This
+parameter is likely to be removed in the next major version and act as if it was set to `true` since when the
+attribute is added to the inverse side of relationship, it is obvious it means that you want changes to owning side to
 be monitored here
 
-#### `@On\IgnoreClassUpdates`
+#### `#[On\IgnoreClassUpdates]`
 
-This annotation is a bit different. When placed on a field (property or collection), it prevents `@On\Update` from 
-firing events related to this field. `@On\Change` ones will still work. This annotation does not allow any parameters.
+This attribute is a bit different. When placed on a field (property or collection), it prevents `#[On\Update]` from 
+firing events related to this field. `#[On\Change]` ones will still work. This attribute does not allow any parameters.
 
 #### Example class
 
@@ -166,34 +166,24 @@ firing events related to this field. `@On\Change` ones will still work. This ann
  *
  * @ORM\Table(name="person")
  * @ORM\Entity(repositoryClass="AppBundle\Repository\PersonRepository")
- * @On\Create(
- *     PersonEvents::CREATED,
- *     class=PersonEvent::class
- * )
- * @On\Delete(
- *     PersonEvents::DELETED,
- *     class=PersonEvent::class
- * )
- * @On\Update(PersonEvents::UPDATED)
  */
+ #[On\Create(event: PersonEvents::CREATED, class: PersonEvent::class)]
+ #[On\Delete(event: PersonEvents::DELETED, class: PersonEvent::class)]
+ #[On\Update(event: PersonEvents::UPDATED)]
 class Person
 {
     /**
-     * @var int
-     *
      * @ORM\Column(name="id", type="integer")
      * @ORM\Id
      * @ORM\GeneratedValue(strategy="AUTO")
      */
-    private $id;
+    private ?int $id = null;
 
     /**
-     * @var string
-     *
      * @ORM\Column(name="name", type="string", length=255, unique=true)
-     * @On\Change(PersonEvents::PROPERTY_CHANGED)
      */
-    private $name;
+    #[On\Change(event: PersonEvents::PROPERTY_CHANGED)]
+    private ?string $name = null;
 
     /**
      * @var Person[]|Collection
@@ -203,10 +193,10 @@ class Person
      *      joinColumns={@ORM\JoinColumn(name="person_id", referencedColumnName="id")},
      *      inverseJoinColumns={@ORM\JoinColumn(name="friend_id", referencedColumnName="id")}
      *      )
-     * @On\Change()
-     * @On\IgnoreClassUpdates()
      */
-    private $friends;
+    #[On\Change]
+    #[On\IgnoreClassUpdates]
+    private Collection $friends;
 
     [...]   
 }
@@ -228,13 +218,6 @@ Lifecycle events are dispatched by default after a successful flush. If needed, 
 ``` yaml
 w3_c_lifecycle_events:
     auto_dispatch:        false
-```
-- temporarily in a container (before Symfony 4):
-
-``` php
-<?php
-$dispatcher = $this->container->get("w3c_lifecycle_events.dispatcher");
-$dispatcher->setAutoDispatch(false);
 ```
 
 - temporarily in a container (since Symfony 4):

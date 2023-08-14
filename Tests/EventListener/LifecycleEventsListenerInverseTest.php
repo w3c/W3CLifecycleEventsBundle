@@ -2,8 +2,6 @@
 
 namespace W3C\LifecycleEventsBundle\Tests\EventListener;
 
-use Doctrine\Common\Annotations\AnnotationReader;
-use Doctrine\Common\Annotations\AnnotationRegistry;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Util\ClassUtils;
 use Doctrine\ORM\EntityManagerInterface;
@@ -13,12 +11,12 @@ use Doctrine\ORM\Mapping\ClassMetadata;
 use Doctrine\ORM\UnitOfWork;
 use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\MockObject\MockObject;
-use W3C\LifecycleEventsBundle\Annotation\Change;
-use W3C\LifecycleEventsBundle\Annotation\Update;
+use W3C\LifecycleEventsBundle\Attribute\Change;
+use W3C\LifecycleEventsBundle\Attribute\Update;
 use W3C\LifecycleEventsBundle\EventListener\LifecycleEventsListener;
-use W3C\LifecycleEventsBundle\Services\AnnotationGetter;
+use W3C\LifecycleEventsBundle\Services\AttributeGetter;
 use W3C\LifecycleEventsBundle\Services\LifecycleEventsDispatcher;
-use W3C\LifecycleEventsBundle\Tests\Annotation\Fixtures\Person;
+use W3C\LifecycleEventsBundle\Tests\Attribute\Fixtures\Person;
 
 /**
  * @author Jean-Guilhem Rouel <jean-gui@w3.org>
@@ -65,9 +63,6 @@ class LifecycleEventsListenerInverseTest extends TestCase
         $this->father = new Person();
         $this->friend1 = new Person();
         $this->friend2 = new Person();
-
-        $loader = require __DIR__ . '/../../vendor/autoload.php';
-        AnnotationRegistry::registerLoader(array($loader, 'loadClass'));
 
         $this->dispatcher = $this
             ->getMockBuilder(LifecycleEventsDispatcher::class)
@@ -184,7 +179,7 @@ class LifecycleEventsListenerInverseTest extends TestCase
                 }
             });
 
-        $this->listener = new LifecycleEventsListener($this->dispatcher, new AnnotationGetter(new AnnotationReader()));
+        $this->listener = new LifecycleEventsListener($this->dispatcher, new AttributeGetter());
     }
 
     public function testOneToOnePostPersist()

@@ -6,8 +6,8 @@ use Doctrine\Common\Util\ClassUtils;
 use Doctrine\ORM\Event\PreUpdateEventArgs;
 use Doctrine\ORM\PersistentCollection;
 use ReflectionException;
-use W3C\LifecycleEventsBundle\Annotation\Change;
-use W3C\LifecycleEventsBundle\Services\AnnotationGetter;
+use W3C\LifecycleEventsBundle\Attribute\Change;
+use W3C\LifecycleEventsBundle\Services\AttributeGetter;
 use W3C\LifecycleEventsBundle\Services\LifecycleEventsDispatcher;
 
 /**
@@ -18,18 +18,18 @@ use W3C\LifecycleEventsBundle\Services\LifecycleEventsDispatcher;
 class LifecyclePropertyEventsListener
 {
     private LifecycleEventsDispatcher $dispatcher;
-    private AnnotationGetter $annotationGetter;
+    private AttributeGetter $attributeGetter;
 
     /**
      * Constructs a new instance
      *
      * @param LifecycleEventsDispatcher $dispatcher the dispatcher to feed
-     * @param AnnotationGetter $annotationGetter
+     * @param AttributeGetter $attributeGetter
      */
-    public function __construct(LifecycleEventsDispatcher $dispatcher, AnnotationGetter $annotationGetter)
+    public function __construct(LifecycleEventsDispatcher $dispatcher, AttributeGetter $attributeGetter)
     {
         $this->dispatcher       = $dispatcher;
-        $this->annotationGetter = $annotationGetter;
+        $this->attributeGetter = $attributeGetter;
     }
 
     /**
@@ -56,12 +56,12 @@ class LifecyclePropertyEventsListener
         $classMetadata = $args->getObjectManager()->getClassMetadata($realClass);
 
         foreach ($args->getEntityChangeSet() as $property => $change) {
-            /** @var Change $annotation */
-            $annotation = $this->annotationGetter->getPropertyAnnotation($classMetadata, $property, Change::class);
+            /** @var Change $attribute */
+            $attribute = $this->attributeGetter->getPropertyAnnotation($classMetadata, $property, Change::class);
 
-            if ($annotation) {
+            if ($attribute) {
                 $this->dispatcher->addPropertyChange(
-                    $annotation,
+                    $attribute,
                     $args->getObject(),
                     $property,
                     $change[0],
@@ -89,16 +89,16 @@ class LifecyclePropertyEventsListener
             }
 
             $property   = $update->getMapping()['fieldName'];
-            /** @var Change $annotation */
-            $annotation = $this->annotationGetter->getPropertyAnnotation($classMetadata, $property, Change::class);
+            /** @var Change $attribute */
+            $attribute = $this->attributeGetter->getPropertyAnnotation($classMetadata, $property, Change::class);
 
             // Make sure $u belongs to the entity we are working on
-            if (!$annotation) {
+            if (!$attribute) {
                 continue;
             }
 
             $this->dispatcher->addCollectionChange(
-                $annotation,
+                $attribute,
                 $args->getObject(),
                 $property,
                 $update->getDeleteDiff(),
