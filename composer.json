@@ -1,7 +1,7 @@
 {
     "name": "w3c/lifecycle-events-bundle",
     "type": "symfony-bundle",
-    "description": "A Symfony 3 bundle to dispatch usable entity lifecycle events (create, update, delete)",
+    "description": "A Symfony bundle to dispatch usable entity lifecycle events (create, update, delete)",
     "keywords": ["lifecycle", "events", "domain"],
     "homepage": "https://github.com/w3c/W3CLifecycleEventsBundle",
     "license": "W3C",
