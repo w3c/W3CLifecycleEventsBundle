@@ -40,14 +40,14 @@ class AttributeGetterTest extends TestCase
 
     public function testGetAnnotation()
     {
-        $attribute = $this->attributeGetter->getAnnotation(
+        $attribute = $this->attributeGetter->getAttribute(
             'W3C\LifecycleEventsBundle\Tests\Attribute\Fixtures\Person',
             Update::class
         );
 
         $this->assertEquals(Update::class, get_class($attribute));
 
-        $attribute = $this->attributeGetter->getAnnotation(
+        $attribute = $this->attributeGetter->getAttribute(
             'W3C\LifecycleEventsBundle\Tests\Attribute\Fixtures\Person',
             Create::class
         );
@@ -64,7 +64,7 @@ class AttributeGetterTest extends TestCase
             ->with('name')
             ->willReturn(new \ReflectionProperty($user, 'name'));
 
-        $attribute = $this->attributeGetter->getPropertyAnnotation($this->classMetadata, 'name', Change::class);
+        $attribute = $this->attributeGetter->getPropertyAttribute($this->classMetadata, 'name', Change::class);
 
         $this->assertEquals(Change::class, get_class($attribute));
     }
@@ -78,7 +78,7 @@ class AttributeGetterTest extends TestCase
             ->with('email')
             ->willReturn(new \ReflectionProperty($user, 'email'));
 
-        $attribute = $this->attributeGetter->getPropertyAnnotation($this->classMetadata, 'email', Change::class);
+        $attribute = $this->attributeGetter->getPropertyAttribute($this->classMetadata, 'email', Change::class);
 
         $this->assertNull($attribute);
     }
@@ -95,6 +95,6 @@ class AttributeGetterTest extends TestCase
             ->method('getName')
             ->willReturn(UserChange::class);
 
-        $this->attributeGetter->getPropertyAnnotation($this->classMetadata, 'foo', Change::class);
+        $this->attributeGetter->getPropertyAttribute($this->classMetadata, 'foo', Change::class);
     }
 }

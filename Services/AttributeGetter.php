@@ -13,7 +13,7 @@ use ReflectionException;
 class AttributeGetter
 {
     /**
-     * Get a class-level annotation
+     * Get a class-level attribute
      *
      * @param string $class           Class to get attribute of
      * @param string $attributeClass Class of the attribute to get
@@ -21,7 +21,7 @@ class AttributeGetter
      * @return object|null object of same class as $attributeClass or null if no attribute is found
      * @throws ReflectionException
      */
-    public function getAnnotation(string $class, string $attributeClass): ?object
+    public function getAttribute(string $class, string $attributeClass): ?object
     {
         $reflection = new \ReflectionClass($class);
         $attributes = $reflection->getAttributes($attributeClass);
@@ -43,7 +43,7 @@ class AttributeGetter
      * @return object|null object of same class as $attributeClass or null if no attribute is found
      * @throws ReflectionException if the field does not exist
      */
-    public function getPropertyAnnotation(ClassMetadata $classMetadata, string $field, string $attributeClass): ?object
+    public function getPropertyAttribute(ClassMetadata $classMetadata, string $field, string $attributeClass): ?object
     {
 
         $reflProperty = $classMetadata->getReflectionProperty($field);

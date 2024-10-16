@@ -57,7 +57,7 @@ class LifecyclePropertyEventsListener
 
         foreach ($args->getEntityChangeSet() as $property => $change) {
             /** @var Change $attribute */
-            $attribute = $this->attributeGetter->getPropertyAnnotation($classMetadata, $property, Change::class);
+            $attribute = $this->attributeGetter->getPropertyAttribute($classMetadata, $property, Change::class);
 
             if ($attribute) {
                 $this->dispatcher->addPropertyChange(
@@ -90,7 +90,7 @@ class LifecyclePropertyEventsListener
 
             $property   = $update->getMapping()['fieldName'];
             /** @var Change $attribute */
-            $attribute = $this->attributeGetter->getPropertyAnnotation($classMetadata, $property, Change::class);
+            $attribute = $this->attributeGetter->getPropertyAttribute($classMetadata, $property, Change::class);
 
             // Make sure $u belongs to the entity we are working on
             if (!$attribute) {
