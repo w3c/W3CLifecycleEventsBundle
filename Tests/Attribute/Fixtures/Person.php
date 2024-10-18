@@ -1,14 +1,13 @@
 <?php
 
-namespace W3C\LifecycleEventsBundle\Tests\Annotation\Fixtures;
+namespace W3C\LifecycleEventsBundle\Tests\Attribute\Fixtures;
 
-use W3C\LifecycleEventsBundle\Annotation as On;
+use W3C\LifecycleEventsBundle\Attribute as On;
 
 /**
- * @On\Update(monitor_owning=true)
- *
  * @author Jean-Guilhem Rouel <jean-gui@w3.org>
  */
+#[On\Update(monitor_owning: true)]
 class Person
 {
     public $name;
@@ -20,8 +19,8 @@ class Person
 
     /**
      * @ ORM\ManyToMany(targetEntity="Person", mappedBy="friends")
-     * @On\Change(monitor_owning=true)
      */
+    #[On\Change(monitor_owning: true)]
     public $friendOf;
 
     /**
@@ -31,8 +30,8 @@ class Person
 
     /**
      * @ ORM\OneToMany(targetEntity="Person", mappedBy="father")
-     * @On\Change(monitor_owning=true)
      */
+    #[On\Change(monitor_owning: true)]
     public $sons;
 
     /**
@@ -42,7 +41,7 @@ class Person
 
     /**
      * @ ORM\OneToOne(targetEntity="Person", mappedBy="mentor")
-     * @On\Change(monitor_owning=true)
      */
+    #[On\Change(monitor_owning: true)]
     public $mentoring;
 }

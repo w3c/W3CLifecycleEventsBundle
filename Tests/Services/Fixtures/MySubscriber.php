@@ -3,7 +3,7 @@
 namespace W3C\LifecycleEventsBundle\Tests\Services\Fixtures;
 
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
-use W3C\LifecycleEventsBundle\Annotation\Create;
+use W3C\LifecycleEventsBundle\Attribute\Create;
 use W3C\LifecycleEventsBundle\Event\Definitions\LifecycleEvents;
 use W3C\LifecycleEventsBundle\Services\LifecycleEventsDispatcher;
 
@@ -13,13 +13,13 @@ class MySubscriber implements EventSubscriberInterface
     private $ran = false;
 
     private $dispatcher;
-    private $annotation;
+    private $attribute;
     private $args;
 
-    public function __construct(LifecycleEventsDispatcher $dispatcher, $annotation, $args)
+    public function __construct(LifecycleEventsDispatcher $dispatcher, $attribute, $args)
     {
         $this->dispatcher = $dispatcher;
-        $this->annotation = $annotation;
+        $this->attribute = $attribute;
         $this->args       = $args;
     }
 

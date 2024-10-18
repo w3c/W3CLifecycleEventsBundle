@@ -1,15 +1,14 @@
 <?php
 
-namespace W3C\LifecycleEventsBundle\Tests\EventListener\Fixtures;
+namespace W3C\LifecycleEventsBundle\Tests\Attribute\Fixtures;
 
 use W3C\LifecycleEventsBundle\Attribute as On;
 
 /**
  * @author Jean-Guilhem Rouel <jean-gui@w3.org>
  */
-class UserNoAnnotation
+class UserErrorUpdate
 {
+    #[On\Update]
     public $name;
-
-    public $friends;
 }
