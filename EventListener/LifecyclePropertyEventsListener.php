@@ -52,8 +52,7 @@ class LifecyclePropertyEventsListener
     private function addPropertyChanges(PreUpdateEventArgs $args): void
     {
         $entity        = $args->getObject();
-        $realClass     = ClassUtils::getRealClass(get_class($entity));
-        $classMetadata = $args->getObjectManager()->getClassMetadata($realClass);
+        $classMetadata = $args->getObjectManager()->getClassMetadata($entity::class);
 
         foreach ($args->getEntityChangeSet() as $property => $change) {
             /** @var Change $attribute */
@@ -79,8 +78,7 @@ class LifecyclePropertyEventsListener
     private function addCollectionChanges(PreUpdateEventArgs $args): void
     {
         $entity        = $args->getObject();
-        $realClass     = ClassUtils::getRealClass(get_class($entity));
-        $classMetadata = $args->getObjectManager()->getClassMetadata($realClass);
+        $classMetadata = $args->getObjectManager()->getClassMetadata($entity::class);
 
         /** @var PersistentCollection $update */
         foreach ($args->getObjectManager()->getUnitOfWork()->getScheduledCollectionUpdates() as $update) {

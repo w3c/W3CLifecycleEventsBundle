@@ -2,8 +2,9 @@
 
 namespace W3C\LifecycleEventsBundle\EventListener;
 
-use Doctrine\Common\Util\ClassUtils;
-use Doctrine\ORM\Event\LifecycleEventArgs;
+use Doctrine\ORM\Mapping\AssociationMapping;
+use Doctrine\Persistence\Event\LifecycleEventArgs;
+use Doctrine\ORM\Event\PostPersistEventArgs;
 use Doctrine\ORM\Event\PreUpdateEventArgs;
 use Doctrine\ORM\Mapping\MappingException;
 use Doctrine\ORM\PersistentCollection;
@@ -41,22 +42,24 @@ class LifecycleEventsListener
     /**
      * Called upon receiving postPersist events
      *
-     * @param LifecycleEventArgs $args event to feed the dispatcher with
+     * @param PostPersistEventArgs $args event to feed the dispatcher with
      *
      * @throws MappingException
      * @throws ReflectionException
      */
-    public function postPersist(LifecycleEventArgs $args): void
+    public function postPersist(PostPersistEventArgs $args): void
     {
         $entity = $args->getObject();
-        $class  = ClassUtils::getRealClass(get_class($entity));
+
+        $classMetadata = $args->getObjectManager()->getClassMetadata($entity::class);
+        $class = $classMetadata->getName();
+
         /** @var Create $attribute */
         $attribute = $this->attributeGetter->getAttribute($class, Create::class);
         if ($attribute) {
             $this->dispatcher->addCreation($attribute, $args);
         }
 
-        $classMetadata = $args->getObjectManager()->getClassMetadata($class);
         foreach ($classMetadata->getAssociationMappings() as $property => $associationMapping) {
             if (!$classMetadata->isAssociationInverseSide($property)) {
                 if ($classMetadata->isSingleValuedAssociation($property)) {
@@ -98,7 +101,8 @@ class LifecycleEventsListener
     public function preRemove(LifecycleEventArgs $args): void
     {
         $entity = $args->getObject();
-        $class  = ClassUtils::getRealClass(get_class($entity));
+        $classMetadata = $args->getObjectManager()->getClassMetadata($entity::class);
+        $class  = $classMetadata->getName();
 
         /** @var Delete $attribute */
         $attribute = $this->attributeGetter->getAttribute($class, Delete::class);
@@ -106,7 +110,6 @@ class LifecycleEventsListener
             $this->dispatcher->addDeletion($attribute, $args);
         }
 
-        $classMetadata = $args->getObjectManager()->getClassMetadata($class);
         foreach ($classMetadata->getAssociationMappings() as $property => $associationMapping) {
             if (!$classMetadata->isAssociationInverseSide($property)) {
                 if ($classMetadata->isSingleValuedAssociation($property)) {
@@ -135,7 +138,8 @@ class LifecycleEventsListener
     public function preUpdate(PreUpdateEventArgs $args): void
     {
         $entity = $args->getObject();
-        $class  = ClassUtils::getRealClass(get_class($entity));
+        $classMetadata = $args->getObjectManager()->getClassMetadata($entity::class);
+        $class  = $classMetadata->getName();
 
         /** @var Update $attribute */
         $attribute = $this->attributeGetter->getAttribute($class, Update::class);
@@ -168,8 +172,8 @@ class LifecycleEventsListener
      */
     private function buildCollectionChanges(PreUpdateEventArgs $args, object $entity): array
     {
-        $realClass          = ClassUtils::getRealClass(get_class($entity));
-        $classMetadata      = $args->getObjectManager()->getClassMetadata($realClass);
+        $classMetadata      = $args->getObjectManager()->getClassMetadata($entity::class);
+        $realClass          = $classMetadata->getName();
         $collectionsChanges = [];
 
         /** @var PersistentCollection $u */
@@ -211,8 +215,9 @@ class LifecycleEventsListener
      */
     private function buildChangeSet(PreUpdateEventArgs $args, $entity): array
     {
-        $realClass     = ClassUtils::getRealClass(get_class($entity));
-        $classMetadata = $args->getObjectManager()->getClassMetadata($realClass);
+        $classMetadata = $args->getObjectManager()->getClassMetadata($entity::class);
+        $realClass = $classMetadata->getName();
+
         $changes       = [];
         foreach (array_keys($args->getEntityChangeSet()) as $property) {
             $ignoreAnnotation = $this->attributeGetter->getPropertyAttribute(
@@ -290,13 +295,13 @@ class LifecycleEventsListener
         $mapping = $classMetadata->getAssociationMapping($property);
 
         if (isset($change['new']) && $change['new']) {
-            $newInverseMetadata = $em->getClassMetadata(ClassUtils::getRealClass(get_class($change['new'])));
+            $newInverseMetadata = $em->getClassMetadata($change['new']::class);
         } else {
             $newInverseMetadata = $em->getClassMetadata($mapping['targetEntity']);
         }
 
         if (isset($change['old']) && $change['old']) {
-            $oldInverseMetadata = $em->getClassMetadata(ClassUtils::getRealClass(get_class($change['old'])));
+            $oldInverseMetadata = $em->getClassMetadata($change['old']::class);
         } else {
             $oldInverseMetadata = $em->getClassMetadata($mapping['targetEntity']);
         }
@@ -333,14 +338,14 @@ class LifecycleEventsListener
         ?object $oldEntity,
         object $owningEntity,
         LifecycleEventArgs $args,
-        array $mapping
+        AssociationMapping $mapping
     ): void {
         $inverseField = $mapping['inversedBy'] ?? null;
         if ($inverseField && $oldEntity) {
             $em = $args->getObjectManager();
 
-            $oldClass = ClassUtils::getRealClass(get_class($oldEntity));
-            $inverseMetadata = $em->getClassMetadata($oldClass);
+            $inverseMetadata = $em->getClassMetadata($oldEntity::class);
+            $oldClass = $inverseMetadata->getName();
 
             /** @var Update $targetAnnotation */
             $targetAnnotation = $this->attributeGetter->getAttribute($oldClass, Update::class);
@@ -389,14 +394,14 @@ class LifecycleEventsListener
         ?object $newEntity,
         object $owningEntity,
         LifecycleEventArgs $args,
-        array $mapping
+        AssociationMapping $mapping,
     ): void {
         $inverseField = $mapping['inversedBy'] ?? null;
         if ($inverseField && $newEntity) {
             $em = $args->getObjectManager();
 
-            $newClass        = ClassUtils::getRealClass(get_class($newEntity));
-            $inverseMetadata = $em->getClassMetadata($newClass);
+            $inverseMetadata = $em->getClassMetadata($newEntity::class);
+            $newClass        = $inverseMetadata->getName();
 
             /** @var Update $targetAnnotation */
             $targetAnnotation = $this->attributeGetter->getAttribute($newClass, Update::class);
@@ -446,14 +451,14 @@ class LifecycleEventsListener
         ?object $deletedEntity,
         object $owningEntity,
         LifecycleEventArgs $args,
-        array $mapping
+        AssociationMapping $mapping
     ): void {
         $inverseField = $mapping['inversedBy'] ?? null;
         if ($inverseField && $deletedEntity) {
             $em = $args->getObjectManager();
 
-            $deletedClass    = ClassUtils::getRealClass(get_class($deletedEntity));
-            $inverseMetadata = $em->getClassMetadata($deletedClass);
+            $inverseMetadata = $em->getClassMetadata($deletedEntity::class);
+            $deletedClass    = $inverseMetadata->getName();
 
             /** @var Update $targetAnnotation */
             $targetAnnotation = $this->attributeGetter->getAttribute($deletedClass, Update::class);
@@ -503,14 +508,14 @@ class LifecycleEventsListener
         ?object $insertedEntity,
         object $owningEntity,
         LifecycleEventArgs $args,
-        array $mapping
+        AssociationMapping $mapping,
     ): void {
         $inverseField = $mapping['inversedBy'] ?? null;
         if ($inverseField && $insertedEntity) {
             $em = $args->getObjectManager();
 
-            $deletedClass    = ClassUtils::getRealClass(get_class($insertedEntity));
-            $inverseMetadata = $em->getClassMetadata($deletedClass);
+            $inverseMetadata = $em->getClassMetadata($insertedEntity::class);
+            $deletedClass    = $inverseMetadata->getName();
 
             /** @var Update $targetAnnotation */
             $targetAnnotation = $this->attributeGetter->getAttribute($deletedClass, Update::class);
