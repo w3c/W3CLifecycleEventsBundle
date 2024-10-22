@@ -308,6 +308,9 @@ class LifecycleEventsListener
 
         // Inverse side should always be similar for old and new entities, but in case that's not the case (because of
         // some weird inheritance, we consider old and new metadata
+        if (!isset($mapping['inversedBy'])) {
+            return;
+        }
 
         // Old Inverse side is also single-valued (one-to-one)
         if ($oldInverseMetadata->isSingleValuedAssociation($mapping['inversedBy'])) {
