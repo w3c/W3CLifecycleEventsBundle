@@ -225,7 +225,7 @@ class LifecycleEventsDispatcher
 
     public function addDeletion(Delete $attribute, LifecycleEventArgs $args): void
     {
-        $classMetadata = $args->getObjectManager()->getClassMetadata(ClassUtils::getRealClass(get_class($args->getObject())));
+        $classMetadata = $args->getObjectManager()->getClassMetadata($args->getObject()::class);
         $this->deletions[] = [
             $attribute,
             $args,

@@ -6,8 +6,16 @@ use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Util\ClassUtils;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\Event\LifecycleEventArgs;
+use Doctrine\ORM\Event\PostPersistEventArgs;
+use Doctrine\ORM\Event\PreRemoveEventArgs;
 use Doctrine\ORM\Event\PreUpdateEventArgs;
 use Doctrine\ORM\Mapping\ClassMetadata;
+use Doctrine\ORM\Mapping\ManyToManyInverseSideMapping;
+use Doctrine\ORM\Mapping\ManyToManyOwningSideMapping;
+use Doctrine\ORM\Mapping\ManyToOneAssociationMapping;
+use Doctrine\ORM\Mapping\OneToManyAssociationMapping;
+use Doctrine\ORM\Mapping\OneToOneInverseSideMapping;
+use Doctrine\ORM\Mapping\OneToOneOwningSideMapping;
 use Doctrine\ORM\UnitOfWork;
 use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -17,6 +25,7 @@ use W3C\LifecycleEventsBundle\EventListener\LifecycleEventsListener;
 use W3C\LifecycleEventsBundle\Services\AttributeGetter;
 use W3C\LifecycleEventsBundle\Services\LifecycleEventsDispatcher;
 use W3C\LifecycleEventsBundle\Tests\Attribute\Fixtures\Person;
+use W3C\LifecycleEventsBundle\Tests\Attribute\Fixtures\PersonNoMonitor;
 
 /**
  * @author Jean-Guilhem Rouel <jean-gui@w3.org>
@@ -79,31 +88,55 @@ class LifecycleEventsListenerInverseTest extends TestCase
             ->disableOriginalConstructor()
             ->getMock();
 
+        $father = new ManyToOneAssociationMapping(
+            'father',
+            Person::class,
+            Person::class,
+        );
+        $father->inversedBy = 'sons';
+
+        $sons = new OneToManyAssociationMapping(
+            'sons',
+            Person::class,
+            Person::class,
+        );
+        $sons->mappedBy = 'father';
+
+        $friends = new ManyToManyOwningSideMapping(
+            'friends',
+            Person::class,
+            Person::class,
+        );
+        $friends->inversedBy = 'friendOf';
+
+        $friendOf = new ManyToManyInverseSideMapping(
+            'friendOf',
+            Person::class,
+            Person::class,
+        );
+        $friendOf->mappedBy = 'friends';
+
+        $mentor = new OneToOneOwningSideMapping(
+            'mentor',
+            Person::class,
+            Person::class,
+        );
+        $mentor->inversedBy = 'mentoring';
+
+        $mentoring = new OneToOneInverseSideMapping(
+            'mentoring',
+            PersonNoMonitor::class,
+            PersonNoMonitor::class,
+        );
+        $mentoring->mappedBy = 'mentor';
+
         $this->mappings = [
-            'father'    => [
-                'targetEntity' => Person::class,
-                'inversedBy'   => 'sons'
-            ],
-            'sons'      => [
-                'targetEntity' => Person::class,
-                'mappedBy'     => 'father',
-            ],
-            'friends'   => [
-                'targetEntity' => Person::class,
-                'inversedBy'   => 'friendOf',
-            ],
-            'friendOf'  => [
-                'targetEntity' => Person::class,
-                'mappedBy'     => 'friends'
-            ],
-            'mentor'    => [
-                'targetEntity' => Person::class,
-                'inversedBy'   => 'mentoring',
-            ],
-            'mentoring' => [
-                'targetEntity' => Person::class,
-                'mappedBy'     => 'mentor',
-            ],
+            'father' => $father,
+            'sons' => $sons,
+            'friends' => $friends,
+            'friendOf' => $friendOf,
+            'mentor'    => $mentor,
+            'mentoring' => $mentoring,
         ];
 
         $this->classMetadata
@@ -184,12 +217,16 @@ class LifecycleEventsListenerInverseTest extends TestCase
 
     public function testOneToOnePostPersist()
     {
-        $event = new LifecycleEventArgs($this->person, $this->manager);
+        $event = new PostPersistEventArgs($this->person, $this->manager);
 
         $this->manager
             ->method('getClassMetadata')
-            ->with(ClassUtils::getRealClass(get_class($this->person)))
+            ->with($this->person::class)
             ->willReturn($this->classMetadata);
+
+        $this->classMetadata
+            ->method('getName')
+            ->willReturn($this->person::class);
 
         $this->classMetadata->reflFields['mentor']
             ->method('getValue')
@@ -223,12 +260,16 @@ class LifecycleEventsListenerInverseTest extends TestCase
 
     public function testOneToOnePreRemove()
     {
-        $event = new LifecycleEventArgs($this->person, $this->manager);
+        $event = new PreRemoveEventArgs($this->person, $this->manager);
 
         $this->manager
             ->method('getClassMetadata')
-            ->with(ClassUtils::getRealClass(get_class($this->person)))
+            ->with($this->person::class)
             ->willReturn($this->classMetadata);
+
+        $this->classMetadata
+            ->method('getName')
+            ->willReturn($this->person::class);
 
         $this->classMetadata->reflFields['mentor']
             ->method('getValue')
@@ -272,8 +313,12 @@ class LifecycleEventsListenerInverseTest extends TestCase
 
         $this->manager
             ->method('getClassMetadata')
-            ->with(ClassUtils::getRealClass(get_class($this->person)))
+            ->with($this->person::class)
             ->willReturn($this->classMetadata);
+
+        $this->classMetadata
+            ->method('getName')
+            ->willReturn($this->person::class);
 
         $this->classMetadata->reflFields['mentor']
             ->method('getValue')
@@ -363,12 +408,16 @@ class LifecycleEventsListenerInverseTest extends TestCase
 
     public function testOneToManyPostPersist()
     {
-        $event = new LifecycleEventArgs($this->person, $this->manager);
+        $event = new PostPersistEventArgs($this->person, $this->manager);
 
         $this->manager
             ->method('getClassMetadata')
-            ->with(ClassUtils::getRealClass(get_class($this->person)))
+            ->with($this->person::class)
             ->willReturn($this->classMetadata);
+
+        $this->classMetadata
+            ->method('getName')
+            ->willReturn($this->person::class);
 
         $this->classMetadata->reflFields['father']
             ->method('getValue')
@@ -401,12 +450,16 @@ class LifecycleEventsListenerInverseTest extends TestCase
 
     public function testOneToManyPreRemove()
     {
-        $event = new LifecycleEventArgs($this->person, $this->manager);
+        $event = new PreRemoveEventArgs($this->person, $this->manager);
 
         $this->manager
             ->method('getClassMetadata')
-            ->with(ClassUtils::getRealClass(get_class($this->person)))
+            ->with($this->person::class)
             ->willReturn($this->classMetadata);
+
+        $this->classMetadata
+            ->method('getName')
+            ->willReturn($this->person::class);
 
         $this->classMetadata->reflFields['father']
             ->method('getValue')
@@ -449,8 +502,12 @@ class LifecycleEventsListenerInverseTest extends TestCase
 
         $this->manager
             ->method('getClassMetadata')
-            ->with(ClassUtils::getRealClass(get_class($this->person)))
+            ->with($this->person::class)
             ->willReturn($this->classMetadata);
+
+        $this->classMetadata
+            ->method('getName')
+            ->willReturn($this->person::class);
 
         $this->dispatcher->expects($this->exactly(4))
             ->method('addUpdate')
@@ -533,12 +590,16 @@ class LifecycleEventsListenerInverseTest extends TestCase
 
     public function testManyToManyPostPersist()
     {
-        $event = new LifecycleEventArgs($this->person, $this->manager);
+        $event = new PostPersistEventArgs($this->person, $this->manager);
 
         $this->manager
             ->method('getClassMetadata')
-            ->with(ClassUtils::getRealClass(get_class($this->person)))
+            ->with($this->person::class)
             ->willReturn($this->classMetadata);
+
+        $this->classMetadata
+            ->method('getName')
+            ->willReturn($this->person::class);
 
         $this->classMetadata->reflFields['friends']
             ->method('getValue')
@@ -594,12 +655,16 @@ class LifecycleEventsListenerInverseTest extends TestCase
 
     public function testManyToManyPreRemove()
     {
-        $event = new LifecycleEventArgs($this->person, $this->manager);
+        $event = new PreRemoveEventArgs($this->person, $this->manager);
 
         $this->manager
             ->method('getClassMetadata')
-            ->with(ClassUtils::getRealClass(get_class($this->person)))
+            ->with($this->person::class)
             ->willReturn($this->classMetadata);
+
+        $this->classMetadata
+            ->method('getName')
+            ->willReturn($this->person::class);
 
         $this->classMetadata->reflFields['friends']
             ->method('getValue')
@@ -671,8 +736,12 @@ class LifecycleEventsListenerInverseTest extends TestCase
 
         $this->manager
             ->method('getClassMetadata')
-            ->with(ClassUtils::getRealClass(get_class($this->person)))
+            ->with($this->person::class)
             ->willReturn($this->classMetadata);
+
+        $this->classMetadata
+            ->method('getName')
+            ->willReturn($this->person::class);
 
         $this->dispatcher->expects($this->exactly(3))
             ->method('addUpdate')
@@ -755,8 +824,16 @@ class LifecycleEventsListenerInverseTest extends TestCase
 
         $this->manager
             ->method('getClassMetadata')
-            ->with(ClassUtils::getRealClass(get_class($this->person)))
+            ->with($this->person::class)
             ->willReturn($this->classMetadata);
+
+        $this->classMetadata
+            ->method('getName')
+            ->willReturn($this->person::class);
+
+        $this->classMetadata
+            ->method('getName')
+            ->willReturn($this->person::class);
 
         $this->dispatcher->expects($this->exactly(3))
             ->method('addUpdate')

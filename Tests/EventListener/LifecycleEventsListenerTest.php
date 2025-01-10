@@ -5,6 +5,8 @@ namespace W3C\LifecycleEventsBundle\Tests\EventListener;
 use Doctrine\Common\Util\ClassUtils;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\Event\LifecycleEventArgs;
+use Doctrine\ORM\Event\PostPersistEventArgs;
+use Doctrine\ORM\Event\PreRemoveEventArgs;
 use Doctrine\ORM\Event\PreUpdateEventArgs;
 use Doctrine\ORM\Mapping\ClassMetadata;
 use Doctrine\ORM\UnitOfWork;
@@ -71,19 +73,23 @@ class LifecycleEventsListenerTest extends TestCase
     public function testPostPersist()
     {
         $user = new User();
-        $event = new LifecycleEventArgs($user, $this->manager);
+        $event = new PostPersistEventArgs($user, $this->manager);
 
         $this->dispatcher->expects($this->once())
             ->method('addCreation');
 
         $this->manager
             ->method('getClassMetadata')
-            ->with(ClassUtils::getRealClass(get_class($user)))
+            ->with($user::class)
             ->willReturn($this->classMetadata);
 
         $this->classMetadata
             ->method('getAssociationMappings')
             ->willReturn(['friends' => []]);
+
+        $this->classMetadata
+            ->method('getName')
+            ->willReturn($user::class);
 
         $this->listener->postPersist($event);
     }
@@ -91,19 +97,23 @@ class LifecycleEventsListenerTest extends TestCase
     public function testPostPersistNoCreationAnnotation()
     {
         $user  = new UserNoAnnotation();
-        $event = new LifecycleEventArgs($user, $this->manager);
+        $event = new PostPersistEventArgs($user, $this->manager);
 
         $this->dispatcher->expects($this->never())
             ->method('addCreation');
 
         $this->manager
             ->method('getClassMetadata')
-            ->with(ClassUtils::getRealClass(get_class($user)))
+            ->with($user::class)
             ->willReturn($this->classMetadata);
 
         $this->classMetadata
             ->method('getAssociationMappings')
             ->willReturn(['friends' => []]);
+
+        $this->classMetadata
+            ->method('getName')
+            ->willReturn($user::class);
 
         $this->listener->postPersist($event);
     }
@@ -111,19 +121,23 @@ class LifecycleEventsListenerTest extends TestCase
     public function testPreRemove()
     {
         $user  = new User();
-        $event = new LifecycleEventArgs($user, $this->manager);
+        $event = new PreRemoveEventArgs($user, $this->manager);
 
         $this->dispatcher->expects($this->once())
             ->method('addDeletion');
 
         $this->manager
             ->method('getClassMetadata')
-            ->with(ClassUtils::getRealClass(get_class($user)))
+            ->with($user::class)
             ->willReturn($this->classMetadata);
 
         $this->classMetadata
             ->method('getAssociationMappings')
             ->willReturn(['friends' => []]);
+
+        $this->classMetadata
+            ->method('getName')
+            ->willReturn($user::class);
 
         $this->listener->preRemove($event);
     }
@@ -131,19 +145,23 @@ class LifecycleEventsListenerTest extends TestCase
     public function testPreRemoveNoAnnotation()
     {
         $user  = new UserNoAnnotation();
-        $event = new LifecycleEventArgs($user, $this->manager);
+        $event = new PreRemoveEventArgs($user, $this->manager);
 
         $this->dispatcher->expects($this->never())
             ->method('addDeletion');
 
         $this->manager
             ->method('getClassMetadata')
-            ->with(ClassUtils::getRealClass(get_class($user)))
+            ->with($user::class)
             ->willReturn($this->classMetadata);
 
         $this->classMetadata
             ->method('getAssociationMappings')
             ->willReturn([]);
+
+        $this->classMetadata
+            ->method('getName')
+            ->willReturn($user::class);
 
         $this->listener->preRemove($event);
     }
@@ -151,19 +169,23 @@ class LifecycleEventsListenerTest extends TestCase
     public function testPreSoftDelete()
     {
         $user  = new User();
-        $event = new LifecycleEventArgs($user, $this->manager);
+        $event = new PreRemoveEventArgs($user, $this->manager);
 
         $this->dispatcher->expects($this->once())
             ->method('addDeletion');
 
         $this->manager
             ->method('getClassMetadata')
-            ->with(ClassUtils::getRealClass(get_class($user)))
+            ->with($user::class)
             ->willReturn($this->classMetadata);
 
         $this->classMetadata
             ->method('getAssociationMappings')
             ->willReturn(['friends' => []]);
+
+        $this->classMetadata
+            ->method('getName')
+            ->willReturn($user::class);
 
         $this->listener->preSoftDelete($event);
     }
@@ -171,15 +193,19 @@ class LifecycleEventsListenerTest extends TestCase
     public function testPreSoftDeleteNoAnnotation()
     {
         $user  = new UserNoAnnotation();
-        $event = new LifecycleEventArgs($user, $this->manager);
+        $event = new PreRemoveEventArgs($user, $this->manager);
 
         $this->dispatcher->expects($this->never())
             ->method('addDeletion');
 
         $this->manager
             ->method('getClassMetadata')
-            ->with(ClassUtils::getRealClass(get_class($user)))
+            ->with($user::class)
             ->willReturn($this->classMetadata);
+
+        $this->classMetadata
+            ->method('getName')
+            ->willReturn($user::class);
 
         $this->classMetadata
             ->method('getAssociationMappings')
@@ -199,8 +225,12 @@ class LifecycleEventsListenerTest extends TestCase
 
         $this->manager
             ->method('getClassMetadata')
-            ->with(ClassUtils::getRealClass(get_class($user)))
+            ->with($user::class)
             ->willReturn($this->classMetadata);
+
+        $this->classMetadata
+            ->method('getName')
+            ->willReturn($user::class);
 
         $this->classMetadata
             ->method('getReflectionProperty')
@@ -225,8 +255,12 @@ class LifecycleEventsListenerTest extends TestCase
 
         $this->manager
             ->method('getClassMetadata')
-            ->with(ClassUtils::getRealClass(get_class($user)))
+            ->with($user::class)
             ->willReturn($this->classMetadata);
+
+        $this->classMetadata
+            ->method('getName')
+            ->willReturn($user::class);
 
         $this->classMetadata
             ->method('getReflectionProperty')
@@ -266,8 +300,12 @@ class LifecycleEventsListenerTest extends TestCase
 
         $this->manager
             ->method('getClassMetadata')
-            ->with(ClassUtils::getRealClass(get_class($user)))
+            ->with($user::class)
             ->willReturn($this->classMetadata);
+
+        $this->classMetadata
+            ->method('getName')
+            ->willReturn($user::class);
 
         $this->classMetadata
             ->method('getReflectionProperty')
@@ -311,8 +349,12 @@ class LifecycleEventsListenerTest extends TestCase
 
         $this->manager
             ->method('getClassMetadata')
-            ->with(ClassUtils::getRealClass(get_class($user)))
+            ->with($user::class)
             ->willReturn($this->classMetadata);
+
+        $this->classMetadata
+            ->method('getName')
+            ->willReturn($user::class);
 
         $this->classMetadata
             ->method('getReflectionProperty')
@@ -337,6 +379,16 @@ class LifecycleEventsListenerTest extends TestCase
             ->disableOriginalConstructor()
             ->setMethods(['getScheduledCollectionUpdates', 'getOwner', 'getMapping', 'getDeleteDiff', 'getInsertDiff'])
             ->getMock();
+
+
+        $this->manager
+            ->method('getClassMetadata')
+            ->with($user::class)
+            ->willReturn($this->classMetadata);
+
+        $this->classMetadata
+            ->method('getName')
+            ->willReturn($user::class);
 
         $this->manager->method('getUnitOfWork')->willReturn($uow);
         $uow->method('getScheduledCollectionUpdates')->willReturn([$uow]);
@@ -382,12 +434,12 @@ class LifecycleEventsListenerTest extends TestCase
 
         $this->manager
             ->method('getClassMetadata')
-            ->with(ClassUtils::getRealClass(get_class($user)))
+            ->with($user::class)
             ->willReturn($this->classMetadata);
 
         $this->classMetadata
             ->method('getName')
-            ->willReturn(get_class($user));
+            ->willReturn($user::class);
 
         $this->classMetadata
             ->method('getReflectionProperty')

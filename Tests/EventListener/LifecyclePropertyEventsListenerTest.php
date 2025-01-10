@@ -92,8 +92,12 @@ class LifecyclePropertyEventsListenerTest extends TestCase
 
         $this->manager
             ->method('getClassMetadata')
-            ->with(ClassUtils::getRealClass(get_class($user)))
+            ->with($user::class)
             ->willReturn($this->classMetadata);
+
+        $this->classMetadata
+            ->method('getName')
+            ->willReturn($user::class);
 
         $this->classMetadata
             ->method('getReflectionProperty')
@@ -128,8 +132,12 @@ class LifecyclePropertyEventsListenerTest extends TestCase
 
         $this->manager
             ->method('getClassMetadata')
-            ->with(ClassUtils::getRealClass(get_class($user)))
+            ->with($user::class)
             ->willReturn($this->classMetadata);
+
+        $this->classMetadata
+            ->method('getName')
+            ->willReturn($user::class);
 
         $this->classMetadata
             ->method('getReflectionProperty')
@@ -162,12 +170,12 @@ class LifecyclePropertyEventsListenerTest extends TestCase
 
         $this->manager
             ->method('getClassMetadata')
-            ->with(ClassUtils::getRealClass(get_class($user)))
+            ->with($user::class)
             ->willReturn($this->classMetadata);
 
         $this->classMetadata
             ->method('getName')
-            ->willReturn(get_class($user));
+            ->willReturn($user::class);
 
         $this->classMetadata
             ->method('getReflectionProperty')
@@ -197,8 +205,12 @@ class LifecyclePropertyEventsListenerTest extends TestCase
 
         $this->manager
             ->method('getClassMetadata')
-            ->with(ClassUtils::getRealClass(get_class($user)))
+            ->with($user::class)
             ->willReturn($this->classMetadata);
+
+        $this->classMetadata
+            ->method('getName')
+            ->willReturn($user::class);
 
         $this->classMetadata
             ->method('getReflectionProperty')
