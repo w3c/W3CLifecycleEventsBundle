@@ -249,8 +249,8 @@ class LifecycleEventsDispatcher
     public function addUpdate(
         Update $attribute,
         object $entity,
-        array $propertyChangeSet = null,
-        array $collectionChangeSet = null
+        ?array $propertyChangeSet = null,
+        ?array $collectionChangeSet = null
     ): void {
         if (list($key, $update) = $this->getUpdate($entity)) {
             $update[2] = array_merge_recursive((array)$update[2], (array)$propertyChangeSet);

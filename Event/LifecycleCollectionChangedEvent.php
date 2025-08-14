@@ -21,7 +21,7 @@ class LifecycleCollectionChangedEvent extends LifecycleEvent
      * @param array|null $deletedElements
      * @param array|null $insertedElements
      */
-    public function __construct(object $entity, string $property, array $deletedElements = null, array $insertedElements = null)
+    public function __construct(object $entity, string $property, ?array $deletedElements = null, ?array $insertedElements = null)
     {
         parent::__construct($entity);
 

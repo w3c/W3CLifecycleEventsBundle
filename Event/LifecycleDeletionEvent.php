@@ -12,7 +12,7 @@ class LifecycleDeletionEvent extends LifecycleEvent
 {
     protected array $identifier;
 
-    public function __construct(object $entity, array $identifier = null)
+    public function __construct(object $entity, ?array $identifier = null)
     {
         parent::__construct($entity);
         $this->identifier = $identifier;
