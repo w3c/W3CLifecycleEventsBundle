@@ -13,7 +13,6 @@ use Doctrine\ORM\UnitOfWork;
 use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\MockObject\MockObject;
 use W3C\LifecycleEventsBundle\Attribute\Change;
-use W3C\LifecycleEventsBundle\EventListener\LifecycleEventsListener;
 use W3C\LifecycleEventsBundle\EventListener\LifecyclePropertyEventsListener;
 use W3C\LifecycleEventsBundle\Services\AttributeGetter;
 use W3C\LifecycleEventsBundle\Services\LifecycleEventsDispatcher;
@@ -28,30 +27,11 @@ use W3C\LifecycleEventsBundle\Tests\EventListener\Fixtures\UserNoAnnotation;
  */
 class LifecyclePropertyEventsListenerTest extends TestCase
 {
-    /**
-     * @var LifecycleEventsListener
-     */
-    private $listener;
-
-    /**
-     * @var LifecycleEventsDispatcher|MockObject
-     */
-    private $dispatcher;
-
-    /**
-     * @var EntityManagerInterface|MockObject
-     */
-    private $manager;
-
-    /**
-     * @var UnitOfWork|MockObject
-     */
-    private $uow;
-
-    /**
-     * @var ClassMetadata|MockObject
-     */
-    private $classMetadata;
+    private LifecyclePropertyEventsListener $listener;
+    private LifecycleEventsDispatcher $dispatcher;
+    private EntityManagerInterface $manager;
+    private UnitOfWork $uow;
+    private ClassMetadata $classMetadata;
 
     public function setUp() : void
     {
