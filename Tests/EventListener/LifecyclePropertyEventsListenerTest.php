@@ -81,6 +81,31 @@ class LifecyclePropertyEventsListenerTest extends TestCase
         $this->listener = new LifecyclePropertyEventsListener($this->dispatcher, new AttributeGetter());
     }
 
+    private function createScheduledCollection(object $owner, string $fieldName, array $deleted, array $inserted): PersistentCollection
+    {
+        $mapping = new OneToManyAssociationMapping($fieldName, User::class, User::class);
+        $mapping->mappedBy = 'friend';
+
+        $collection = new PersistentCollection(
+            $this->manager,
+            $this->classMetadata,
+            new ArrayCollection($deleted)
+        );
+
+        $collection->setOwner($owner, $mapping);
+        $collection->takeSnapshot();
+
+        foreach ($deleted as $item) {
+            $collection->removeElement($item);
+        }
+
+        foreach ($inserted as $item) {
+            $collection->add($item);
+        }
+
+        return $collection;
+    }
+
     public function testPreUpdateProperty()
     {
         $user = new UserChange();
@@ -123,23 +148,10 @@ class LifecyclePropertyEventsListenerTest extends TestCase
         $reflection = new \ReflectionProperty(get_class($user), 'name');
         $attribute = $reflection->getAttributes(Change::class)[0]->newInstance();
 
-        $mapping = new OneToManyAssociationMapping('friends', User::class, User::class);
-        $mapping->mappedBy = 'friend';
-
         $deleted = [new User(), new User()];
         $inserted = [new User()];
 
-        $pc = new PersistentCollection($this->manager, $this->classMetadata, new ArrayCollection($deleted));
-        $pc->setOwner($user, $mapping);
-        $pc->takeSnapshot();
-
-        foreach ($deleted as $friend) {
-            $pc->removeElement($friend);
-        }
-
-        foreach ($inserted as $friend) {
-            $pc->add($friend);
-        }
+        $pc = $this->createScheduledCollection($user, 'friends', $deleted, $inserted);
 
         $this->manager->method('getUnitOfWork')->willReturn($this->uow);
         $this->uow->method('getScheduledCollectionUpdates')->willReturn([$pc]);
@@ -176,20 +188,7 @@ class LifecyclePropertyEventsListenerTest extends TestCase
         $deleted = [new User(), new User()];
         $inserted = [new User()];
 
-        $mapping = new OneToManyAssociationMapping('foo', User::class, User::class);
-        $mapping->mappedBy = 'friend';
-
-        $pc = new PersistentCollection($this->manager, $this->classMetadata, new ArrayCollection($deleted));
-        $pc->setOwner($user, $mapping);
-        $pc->takeSnapshot();
-
-        foreach ($deleted as $friend) {
-            $pc->removeElement($friend);
-        }
-
-        foreach ($inserted as $friend) {
-            $pc->add($friend);
-        }
+        $pc = $this->createScheduledCollection($user, 'foo', $deleted, $inserted);
 
         $this->manager->method('getUnitOfWork')->willReturn($this->uow);
         $this->uow->method('getScheduledCollectionUpdates')->willReturn([$pc]);
@@ -223,20 +222,7 @@ class LifecyclePropertyEventsListenerTest extends TestCase
         $deleted = [new User(), new User()];
         $inserted = [new User()];
 
-        $mapping = new OneToManyAssociationMapping('friends', User::class, User::class);
-        $mapping->mappedBy = 'friend';
-
-        $pc = new PersistentCollection($this->manager, $this->classMetadata, new ArrayCollection($deleted));
-        $pc->setOwner($user, $mapping);
-        $pc->takeSnapshot();
-
-        foreach ($deleted as $friend) {
-            $pc->removeElement($friend);
-        }
-
-        foreach ($inserted as $friend) {
-            $pc->add($friend);
-        }
+        $pc = $this->createScheduledCollection($user, 'friends', $deleted, $inserted);
 
         $this->manager->method('getUnitOfWork')->willReturn($this->uow);
         $this->uow->method('getScheduledCollectionUpdates')->willReturn([$pc]);
@@ -271,20 +257,7 @@ class LifecyclePropertyEventsListenerTest extends TestCase
         $deleted = [new User(), new User()];
         $inserted = [new User()];
 
-        $mapping = new OneToManyAssociationMapping('friends', User::class, User::class);
-        $mapping->mappedBy = 'friend';
-
-        $pc = new PersistentCollection($this->manager, $this->classMetadata, new ArrayCollection($deleted));
-        $pc->setOwner($user2, $mapping);
-        $pc->takeSnapshot();
-
-        foreach ($deleted as $friend) {
-            $pc->removeElement($friend);
-        }
-
-        foreach ($inserted as $friend) {
-            $pc->add($friend);
-        }
+        $pc = $this->createScheduledCollection($user2, 'friends', $deleted, $inserted);
 
         $this->manager->method('getUnitOfWork')->willReturn($this->uow);
         $this->uow->method('getScheduledCollectionUpdates')->willReturn([$pc]);
@@ -305,20 +278,7 @@ class LifecyclePropertyEventsListenerTest extends TestCase
         $deleted = [new User(), new User()];
         $inserted = [new User()];
 
-        $mapping = new OneToManyAssociationMapping('foo', User::class, User::class);
-        $mapping->mappedBy = 'friend';
-
-        $pc = new PersistentCollection($this->manager, $this->classMetadata, new ArrayCollection($deleted));
-        $pc->setOwner($user2, $mapping);
-        $pc->takeSnapshot();
-
-        foreach ($deleted as $friend) {
-            $pc->removeElement($friend);
-        }
-
-        foreach ($inserted as $friend) {
-            $pc->add($friend);
-        }
+        $pc = $this->createScheduledCollection($user2, 'foo', $deleted, $inserted);
 
         $this->manager->method('getUnitOfWork')->willReturn($this->uow);
         $this->uow->method('getScheduledCollectionUpdates')->willReturn([$pc]);
