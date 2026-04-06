@@ -12,14 +12,11 @@ use W3C\LifecycleEventsBundle\Tests\Attribute\Fixtures\User;
  */
 class LifecycleUpdateEventTest extends TestCase
 {
-    private $deleted;
-    private $inserted;
-    private $propertyChanges;
-    private $collectionChanges;
-    /**
-     * @var LifecycleUpdateEvent
-     */
-    private $event;
+    private array $deleted;
+    private array $inserted;
+    private array $propertyChanges;
+    private array $collectionChanges;
+    private LifecycleUpdateEvent $event;
 
     public function setUp() : void
     {

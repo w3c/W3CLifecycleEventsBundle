@@ -12,15 +12,8 @@ use W3C\LifecycleEventsBundle\Services\LifecycleEventsDispatcher;
  */
 class PostFlushListenerTest extends TestCase
 {
-    /**
-     * @var LifecycleEventsDispatcher|\PHPUnit_Framework_MockObject_MockObject
-     */
-    private $dispatcher;
-
-    /**
-     * @var PostFlushEventArgs|\PHPUnit_Framework_MockObject_MockObject
-     */
-    private $event;
+    private LifecycleEventsDispatcher $dispatcher;
+    private PostFlushEventArgs $event;
 
     public function setUp() : void
     {

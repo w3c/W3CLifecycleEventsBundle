@@ -31,36 +31,16 @@ use W3C\LifecycleEventsBundle\Tests\Attribute\Fixtures\PersonNoMonitor;
  */
 class LifecycleEventsListenerInverseNoMonitorTest extends TestCase
 {
-    /**
-     * @var LifecycleEventsListener
-     */
-    private $listener;
-
-    /**
-     * @var LifecycleEventsDispatcher|MockObject
-     */
-    private $dispatcher;
-
-    /**
-     * @var EntityManagerInterface|MockObject
-     */
-    private $manager;
-
-    /**
-     * @var ClassMetadata|MockObject
-     */
-    private $classMetadata;
-
-    /**
-     * @var array
-     */
-    private $mappings;
-
-    private $person;
-    private $mentor;
-    private $father;
-    private $friend1;
-    private $friend2;
+    private LifecycleEventsListener $listener;
+    private LifecycleEventsDispatcher $dispatcher;
+    private EntityManagerInterface $manager;
+    private ClassMetadata $classMetadata;
+    private array $mappings;
+    private PersonNoMonitor $person;
+    private PersonNoMonitor $mentor;
+    private PersonNoMonitor $father;
+    private PersonNoMonitor $friend1;
+    private PersonNoMonitor $friend2;
 
     public function setUp() : void
     {

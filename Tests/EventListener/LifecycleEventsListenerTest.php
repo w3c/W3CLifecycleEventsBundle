@@ -31,25 +31,10 @@ use W3C\LifecycleEventsBundle\Tests\EventListener\Fixtures\UserNoAnnotation;
  */
 class LifecycleEventsListenerTest extends TestCase
 {
-    /**
-     * @var LifecycleEventsListener
-     */
-    private $listener;
-
-    /**
-     * @var LifecycleEventsDispatcher|MockObject
-     */
-    private $dispatcher;
-
-    /**
-     * @var EntityManagerInterface|MockObject
-     */
-    private $manager;
-
-    /**
-     * @var ClassMetadata|MockObject
-     */
-    private $classMetadata;
+    private LifecycleEventsListener $listener;
+    private LifecycleEventsDispatcher $dispatcher;
+    private EntityManagerInterface $manager;
+    private ClassMetadata $classMetadata;
 
     public function setUp() : void
     {
