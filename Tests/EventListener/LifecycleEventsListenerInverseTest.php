@@ -528,17 +528,18 @@ class LifecycleEventsListenerInverseTest extends TestCase
                 $this->assertSame($this->father, $entity);
                 $this->assertSame('sons', $field);
 
-                match ($matcher->numberOfInvocations()) {
-                    1 => [
-                        $this->assertSame([], $old),
-                        $this->assertSame([$this->person], $new),
-                    ],
-                    2 => [
-                        $this->assertSame([$this->person], $old),
-                        $this->assertSame([], $new),
-                    ],
-                    default => $this->fail('addCollectionChange called more times than expected.'),
-                };
+                switch ($matcher->numberOfInvocations()) {
+                    case 1:
+                        $this->assertSame([], $old);
+                        $this->assertSame([$this->person], $new);
+                        break;
+                    case 2:
+                        $this->assertSame([$this->person], $old);
+                        $this->assertSame([], $new);
+                        break;
+                    default:
+                        $this->fail('addCollectionChange called more times than expected.');
+                }
             });
 
         $changeSet = ['father' => [null, $this->father]];
