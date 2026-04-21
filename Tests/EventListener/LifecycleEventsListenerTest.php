@@ -13,7 +13,6 @@ use Doctrine\ORM\Mapping\OneToManyAssociationMapping;
 use Doctrine\ORM\PersistentCollection;
 use Doctrine\ORM\UnitOfWork;
 use PHPUnit\Framework\TestCase;
-use PHPUnit\Framework\MockObject\MockObject;
 use W3C\LifecycleEventsBundle\Attribute\Update;
 use W3C\LifecycleEventsBundle\EventListener\LifecycleEventsListener;
 use W3C\LifecycleEventsBundle\Services\AttributeGetter;
