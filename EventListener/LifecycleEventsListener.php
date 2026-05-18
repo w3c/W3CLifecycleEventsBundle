@@ -63,11 +63,11 @@ class LifecycleEventsListener
         foreach ($classMetadata->getAssociationMappings() as $property => $associationMapping) {
             if (!$classMetadata->isAssociationInverseSide($property)) {
                 if ($classMetadata->isSingleValuedAssociation($property)) {
-                    $inverse = $classMetadata->reflFields[$property]->getValue($entity);
+                    $inverse = $classMetadata->propertyAccessors[$property]->getValue($entity);
                     $change  = ['old' => null, 'new' => $inverse];
                     $this->propertyUpdateInverse($args, $class, $property, $change, $entity);
                 } elseif ($classMetadata->isCollectionValuedAssociation($property)) {
-                    $inverse = $classMetadata->reflFields[$property]->getValue($entity);
+                    $inverse = $classMetadata->propertyAccessors[$property]->getValue($entity);
                     if ($inverse) {
                         $change = ['deleted' => [], 'inserted' => $inverse->toArray()];
                         $this->collectionUpdateInverse($args, $class, $property, $change, $entity);
@@ -113,11 +113,11 @@ class LifecycleEventsListener
         foreach ($classMetadata->getAssociationMappings() as $property => $associationMapping) {
             if (!$classMetadata->isAssociationInverseSide($property)) {
                 if ($classMetadata->isSingleValuedAssociation($property)) {
-                    $inverse = $classMetadata->reflFields[$property]->getValue($entity);
+                    $inverse = $classMetadata->propertyAccessors[$property]->getValue($entity);
                     $change  = ['old' => $inverse, 'new' => null];
                     $this->propertyUpdateInverse($args, $class, $property, $change, $entity);
                 } elseif ($classMetadata->isCollectionValuedAssociation($property)) {
-                    $inverse = $classMetadata->reflFields[$property]->getValue($entity);
+                    $inverse = $classMetadata->propertyAccessors[$property]->getValue($entity);
                     if ($inverse) {
                         $change = ['deleted' => $inverse->toArray(), 'inserted' => []];
                         $this->collectionUpdateInverse($args, $class, $property, $change, $entity);

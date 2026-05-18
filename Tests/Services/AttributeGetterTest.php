@@ -3,6 +3,7 @@
 namespace W3C\LifecycleEventsBundle\Tests\Services;
 
 use Doctrine\ORM\Mapping\ClassMetadata;
+use Doctrine\ORM\Mapping\PropertyAccessors\PropertyAccessorFactory;
 use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\MockObject\MockObject;
 use W3C\LifecycleEventsBundle\Attribute\Change;
@@ -60,9 +61,9 @@ class AttributeGetterTest extends TestCase
         $user = new UserChange();
 
         $this->classMetadata
-            ->method('getReflectionProperty')
+            ->method('getPropertyAccessor')
             ->with('name')
-            ->willReturn(new \ReflectionProperty($user, 'name'));
+            ->willReturn(PropertyAccessorFactory::createPropertyAccessor($user::class, 'name'));
 
         $attribute = $this->attributeGetter->getPropertyAttribute($this->classMetadata, 'name', Change::class);
 
@@ -74,9 +75,9 @@ class AttributeGetterTest extends TestCase
         $user = new UserChange();
 
         $this->classMetadata
-            ->method('getReflectionProperty')
+            ->method('getPropertyAccessor')
             ->with('email')
-            ->willReturn(new \ReflectionProperty($user, 'email'));
+            ->willReturn(PropertyAccessorFactory::createPropertyAccessor($user::class, 'email'));
 
         $attribute = $this->attributeGetter->getPropertyAttribute($this->classMetadata, 'email', Change::class);
 
