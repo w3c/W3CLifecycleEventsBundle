@@ -19,7 +19,7 @@
         "symfony/yaml": "^7.0|^8.0",
         "symfony/event-dispatcher": "^7.0|^8.0",
         "doctrine/orm": "^3.4",
-        "doctrine/persistence": "^3.0"
+        "doctrine/persistence": "^3.0|^4.2"
     },
     "require-dev": {
         "phpunit/phpunit": "^10.0",
