@@ -2,16 +2,17 @@
 
 namespace W3C\LifecycleEventsBundle\Tests\EventListener;
 
-use Doctrine\Common\Util\ClassUtils;
+use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\Event\LifecycleEventArgs;
 use Doctrine\ORM\Event\PostPersistEventArgs;
 use Doctrine\ORM\Event\PreRemoveEventArgs;
 use Doctrine\ORM\Event\PreUpdateEventArgs;
 use Doctrine\ORM\Mapping\ClassMetadata;
+use Doctrine\ORM\Mapping\OneToManyAssociationMapping;
+use Doctrine\ORM\PersistentCollection;
 use Doctrine\ORM\UnitOfWork;
 use PHPUnit\Framework\TestCase;
-use PHPUnit\Framework\MockObject\MockObject;
 use W3C\LifecycleEventsBundle\Attribute\Update;
 use W3C\LifecycleEventsBundle\EventListener\LifecycleEventsListener;
 use W3C\LifecycleEventsBundle\Services\AttributeGetter;
@@ -28,25 +29,10 @@ use W3C\LifecycleEventsBundle\Tests\EventListener\Fixtures\UserNoAnnotation;
  */
 class LifecycleEventsListenerTest extends TestCase
 {
-    /**
-     * @var LifecycleEventsListener
-     */
-    private $listener;
-
-    /**
-     * @var LifecycleEventsDispatcher|MockObject
-     */
-    private $dispatcher;
-
-    /**
-     * @var EntityManagerInterface|MockObject
-     */
-    private $manager;
-
-    /**
-     * @var ClassMetadata|MockObject
-     */
-    private $classMetadata;
+    private LifecycleEventsListener $listener;
+    private LifecycleEventsDispatcher $dispatcher;
+    private EntityManagerInterface $manager;
+    private ClassMetadata $classMetadata;
 
     public function setUp() : void
     {
@@ -283,20 +269,26 @@ class LifecycleEventsListenerTest extends TestCase
         $reflection = new \ReflectionClass($user);
         $attribute = $reflection->getAttributes(Update::class)[0]->newInstance();
 
+        $mapping = new OneToManyAssociationMapping('friends', User::class, User::class);
+        $mapping->mappedBy = 'friend';
+
+        $pc = new PersistentCollection(
+            $this->manager,
+            $this->classMetadata,
+            new ArrayCollection([new User(), new User()]),
+        );
+        $pc->setOwner(new User(), $mapping);
+        $pc->takeSnapshot();
+        $pc->add(new User);
+
         $uow = $this
             ->getMockBuilder(UnitOfWork::class)
             ->disableOriginalConstructor()
-            ->setMethods(['getScheduledCollectionUpdates', 'getOwner', 'getMapping', 'getDeleteDiff', 'getInsertDiff'])
+            ->onlyMethods(['getScheduledCollectionUpdates'])
             ->getMock();
 
         $this->manager->method('getUnitOfWork')->willReturn($uow);
-        $uow->method('getScheduledCollectionUpdates')->willReturn([$uow]);
-        $uow->method('getOwner')->willReturn($user);
-        $uow->method('getMapping')->willReturn(['fieldName' => 'friends']);
-        $deleted = [new User(), new User()];
-        $uow->method('getDeleteDiff')->willReturn($deleted);
-        $inserted = [new User()];
-        $uow->method('getInsertDiff')->willReturn($inserted);
+        $uow->method('getScheduledCollectionUpdates')->willReturn([$pc]);
 
         $this->manager
             ->method('getClassMetadata')
@@ -328,24 +320,39 @@ class LifecycleEventsListenerTest extends TestCase
         $reflection = new \ReflectionClass($user);
         $attribute = $reflection->getAttributes(Update::class)[0]->newInstance();
 
+        $mapping = new OneToManyAssociationMapping('friends', User::class, User::class);
+        $mapping->mappedBy = 'friend';
+
+        $user1 = new User();
+        $user2 = new User();
+        $user3 = new User();
+
+        $pc = new PersistentCollection(
+            $this->manager,
+            $this->classMetadata,
+            new ArrayCollection([$user1, $user2]),
+        );
+        $pc->setOwner($user, $mapping);
+        $pc->takeSnapshot();
+        $pc->removeElement($user1);
+        $pc->removeElement($user2);
+        $pc->add($user3);
+
         $uow = $this
             ->getMockBuilder(UnitOfWork::class)
             ->disableOriginalConstructor()
-            ->setMethods(['getScheduledCollectionUpdates', 'getOwner', 'getMapping', 'getDeleteDiff', 'getInsertDiff'])
+            ->onlyMethods(['getScheduledCollectionUpdates'])
             ->getMock();
 
         $this->manager->method('getUnitOfWork')->willReturn($uow);
-        $uow->method('getScheduledCollectionUpdates')->willReturn([$uow]);
-        $uow->method('getOwner')->willReturn($user);
-        $uow->method('getMapping')->willReturn(['fieldName' => 'friends']);
-        $deleted = [new User(), new User()];
-        $uow->method('getDeleteDiff')->willReturn($deleted);
-        $inserted = [new User()];
-        $uow->method('getInsertDiff')->willReturn($inserted);
+        $uow->method('getScheduledCollectionUpdates')->willReturn([$pc]);
+
+        $this->assertEquals([$user1, $user2], $pc->getDeleteDiff());
+        $this->assertEquals([$user3], $pc->getInsertDiff());
 
         $this->dispatcher->expects($this->once())
             ->method('addUpdate')
-            ->with($attribute, $user, [], ['friends' => ['deleted' => $deleted, 'inserted' => $inserted]]);
+            ->with($attribute, $user, [], ['friends' => ['deleted' => [$user1, $user2], 'inserted' => [$user3]]]);
 
         $this->manager
             ->method('getClassMetadata')
@@ -374,12 +381,17 @@ class LifecycleEventsListenerTest extends TestCase
         $reflection = new \ReflectionClass($user);
         $attribute = $reflection->getAttributes(Update::class)[0]->newInstance();
 
+        $mapping = new OneToManyAssociationMapping('friends', User::class, User::class);
+        $mapping->mappedBy = 'friend';
+
+        $pc = new PersistentCollection($this->manager, $this->classMetadata, new ArrayCollection());
+        $pc->setOwner($user2, $mapping);
+
         $uow = $this
             ->getMockBuilder(UnitOfWork::class)
             ->disableOriginalConstructor()
-            ->setMethods(['getScheduledCollectionUpdates', 'getOwner', 'getMapping', 'getDeleteDiff', 'getInsertDiff'])
+            ->onlyMethods(['getScheduledCollectionUpdates'])
             ->getMock();
-
 
         $this->manager
             ->method('getClassMetadata')
@@ -391,13 +403,7 @@ class LifecycleEventsListenerTest extends TestCase
             ->willReturn($user::class);
 
         $this->manager->method('getUnitOfWork')->willReturn($uow);
-        $uow->method('getScheduledCollectionUpdates')->willReturn([$uow]);
-        $uow->method('getOwner')->willReturn($user2);
-        $uow->method('getMapping')->willReturn(['fieldName' => 'friends']);
-        $deleted = [new User(), new User()];
-        $uow->method('getDeleteDiff')->willReturn($deleted);
-        $inserted = [new User()];
-        $uow->method('getInsertDiff')->willReturn($inserted);
+        $uow->method('getScheduledCollectionUpdates')->willReturn([$pc]);
 
         $this->dispatcher->expects($this->once())
             ->method('addUpdate')
@@ -417,20 +423,20 @@ class LifecycleEventsListenerTest extends TestCase
         $reflection = new \ReflectionClass($user);
         $attribute = $reflection->getAttributes(Update::class)[0]->newInstance();
 
+        $mapping = new OneToManyAssociationMapping('foo', User::class, User::class);
+        $mapping->mappedBy = 'friend';
+
+        $pc = new PersistentCollection($this->manager, $this->classMetadata, new ArrayCollection());
+        $pc->setOwner($user, $mapping);
+
         $uow = $this
             ->getMockBuilder(UnitOfWork::class)
             ->disableOriginalConstructor()
-            ->setMethods(['getScheduledCollectionUpdates', 'getOwner', 'getMapping', 'getDeleteDiff', 'getInsertDiff'])
+            ->onlyMethods(['getScheduledCollectionUpdates'])
             ->getMock();
 
         $this->manager->method('getUnitOfWork')->willReturn($uow);
-        $uow->method('getScheduledCollectionUpdates')->willReturn([$uow]);
-        $uow->method('getOwner')->willReturn($user);
-        $uow->method('getMapping')->willReturn(['fieldName' => 'foo']);
-        $deleted = [new User(), new User()];
-        $uow->method('getDeleteDiff')->willReturn($deleted);
-        $inserted = [new User()];
-        $uow->method('getInsertDiff')->willReturn($inserted);
+        $uow->method('getScheduledCollectionUpdates')->willReturn([$pc]);
 
         $this->manager
             ->method('getClassMetadata')

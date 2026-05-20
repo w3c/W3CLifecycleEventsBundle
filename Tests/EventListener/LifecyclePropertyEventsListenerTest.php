@@ -2,15 +2,15 @@
 
 namespace W3C\LifecycleEventsBundle\Tests\EventListener;
 
-use Doctrine\Common\Util\ClassUtils;
+use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\Event\PreUpdateEventArgs;
 use Doctrine\ORM\Mapping\ClassMetadata;
+use Doctrine\ORM\Mapping\OneToManyAssociationMapping;
+use Doctrine\ORM\PersistentCollection;
 use Doctrine\ORM\UnitOfWork;
 use PHPUnit\Framework\TestCase;
-use PHPUnit\Framework\MockObject\MockObject;
 use W3C\LifecycleEventsBundle\Attribute\Change;
-use W3C\LifecycleEventsBundle\EventListener\LifecycleEventsListener;
 use W3C\LifecycleEventsBundle\EventListener\LifecyclePropertyEventsListener;
 use W3C\LifecycleEventsBundle\Services\AttributeGetter;
 use W3C\LifecycleEventsBundle\Services\LifecycleEventsDispatcher;
@@ -25,30 +25,11 @@ use W3C\LifecycleEventsBundle\Tests\EventListener\Fixtures\UserNoAnnotation;
  */
 class LifecyclePropertyEventsListenerTest extends TestCase
 {
-    /**
-     * @var LifecycleEventsListener
-     */
-    private $listener;
-
-    /**
-     * @var LifecycleEventsDispatcher|MockObject
-     */
-    private $dispatcher;
-
-    /**
-     * @var EntityManagerInterface|MockObject
-     */
-    private $manager;
-
-    /**
-     * @var UnitOfWork|MockObject
-     */
-    private $uow;
-
-    /**
-     * @var ClassMetadata|MockObject
-     */
-    private $classMetadata;
+    private LifecyclePropertyEventsListener $listener;
+    private LifecycleEventsDispatcher $dispatcher;
+    private EntityManagerInterface $manager;
+    private UnitOfWork $uow;
+    private ClassMetadata $classMetadata;
 
     public function setUp() : void
     {
@@ -72,10 +53,35 @@ class LifecyclePropertyEventsListenerTest extends TestCase
         $this->uow = $this
             ->getMockBuilder(UnitOfWork::class)
             ->disableOriginalConstructor()
-            ->setMethods(['getScheduledCollectionUpdates', 'getOwner', 'getMapping', 'getDeleteDiff', 'getInsertDiff'])
+            ->onlyMethods(['getScheduledCollectionUpdates'])
             ->getMock();
 
         $this->listener = new LifecyclePropertyEventsListener($this->dispatcher, new AttributeGetter());
+    }
+
+    private function createScheduledCollection(object $owner, string $fieldName, array $deleted, array $inserted): PersistentCollection
+    {
+        $mapping = new OneToManyAssociationMapping($fieldName, User::class, User::class);
+        $mapping->mappedBy = 'friend';
+
+        $collection = new PersistentCollection(
+            $this->manager,
+            $this->classMetadata,
+            new ArrayCollection($deleted)
+        );
+
+        $collection->setOwner($owner, $mapping);
+        $collection->takeSnapshot();
+
+        foreach ($deleted as $item) {
+            $collection->removeElement($item);
+        }
+
+        foreach ($inserted as $item) {
+            $collection->add($item);
+        }
+
+        return $collection;
     }
 
     public function testPreUpdateProperty()
@@ -120,15 +126,13 @@ class LifecyclePropertyEventsListenerTest extends TestCase
         $reflection = new \ReflectionProperty(get_class($user), 'name');
         $attribute = $reflection->getAttributes(Change::class)[0]->newInstance();
 
+        $deleted = [new User(), new User()];
+        $inserted = [new User()];
+
+        $pc = $this->createScheduledCollection($user, 'friends', $deleted, $inserted);
 
         $this->manager->method('getUnitOfWork')->willReturn($this->uow);
-        $this->uow->method('getScheduledCollectionUpdates')->willReturn([$this->uow]);
-        $this->uow->method('getOwner')->willReturn($user);
-        $this->uow->method('getMapping')->willReturn(['fieldName' => 'friends']);
-        $deleted = [new User(), new User()];
-        $this->uow->method('getDeleteDiff')->willReturn($deleted);
-        $inserted = [new User()];
-        $this->uow->method('getInsertDiff')->willReturn($inserted);
+        $this->uow->method('getScheduledCollectionUpdates')->willReturn([$pc]);
 
         $this->manager
             ->method('getClassMetadata')
@@ -159,14 +163,13 @@ class LifecyclePropertyEventsListenerTest extends TestCase
         $changeSet = [];
         $event     = new PreUpdateEventArgs($user, $this->manager, $changeSet);
 
-        $this->manager->method('getUnitOfWork')->willReturn($this->uow);
-        $this->uow->method('getScheduledCollectionUpdates')->willReturn([$this->uow]);
-        $this->uow->method('getOwner')->willReturn($user);
-        $this->uow->method('getMapping')->willReturn(['fieldName' => 'foo']);
         $deleted = [new User(), new User()];
-        $this->uow->method('getDeleteDiff')->willReturn($deleted);
         $inserted = [new User()];
-        $this->uow->method('getInsertDiff')->willReturn($inserted);
+
+        $pc = $this->createScheduledCollection($user, 'foo', $deleted, $inserted);
+
+        $this->manager->method('getUnitOfWork')->willReturn($this->uow);
+        $this->uow->method('getScheduledCollectionUpdates')->willReturn([$pc]);
 
         $this->manager
             ->method('getClassMetadata')
@@ -194,14 +197,13 @@ class LifecyclePropertyEventsListenerTest extends TestCase
         $changeSet = [];
         $event     = new PreUpdateEventArgs($user, $this->manager, $changeSet);
 
-        $this->manager->method('getUnitOfWork')->willReturn($this->uow);
-        $this->uow->method('getScheduledCollectionUpdates')->willReturn([$this->uow]);
-        $this->uow->method('getOwner')->willReturn($user);
-        $this->uow->method('getMapping')->willReturn(['fieldName' => 'friends']);
         $deleted = [new User(), new User()];
-        $this->uow->method('getDeleteDiff')->willReturn($deleted);
         $inserted = [new User()];
-        $this->uow->method('getInsertDiff')->willReturn($inserted);
+
+        $pc = $this->createScheduledCollection($user, 'friends', $deleted, $inserted);
+
+        $this->manager->method('getUnitOfWork')->willReturn($this->uow);
+        $this->uow->method('getScheduledCollectionUpdates')->willReturn([$pc]);
 
         $this->manager
             ->method('getClassMetadata')
@@ -230,14 +232,13 @@ class LifecyclePropertyEventsListenerTest extends TestCase
         $changeSet = [];
         $event     = new PreUpdateEventArgs($user, $this->manager, $changeSet);
 
-        $this->manager->method('getUnitOfWork')->willReturn($this->uow);
-        $this->uow->method('getScheduledCollectionUpdates')->willReturn([$this->uow]);
-        $this->uow->method('getOwner')->willReturn($user2);
-        $this->uow->method('getMapping')->willReturn(['fieldName' => 'friends']);
         $deleted = [new User(), new User()];
-        $this->uow->method('getDeleteDiff')->willReturn($deleted);
         $inserted = [new User()];
-        $this->uow->method('getInsertDiff')->willReturn($inserted);
+
+        $pc = $this->createScheduledCollection($user2, 'friends', $deleted, $inserted);
+
+        $this->manager->method('getUnitOfWork')->willReturn($this->uow);
+        $this->uow->method('getScheduledCollectionUpdates')->willReturn([$pc]);
 
         $this->dispatcher->expects($this->never())
             ->method('addCollectionChange');
@@ -252,14 +253,13 @@ class LifecyclePropertyEventsListenerTest extends TestCase
         $changeSet = [];
         $event     = new PreUpdateEventArgs($user, $this->manager, $changeSet);
 
-        $this->manager->method('getUnitOfWork')->willReturn($this->uow);
-        $this->uow->method('getScheduledCollectionUpdates')->willReturn([$this->uow]);
-        $this->uow->method('getOwner')->willReturn($user2);
-        $this->uow->method('getMapping')->willReturn(['fieldName' => 'foo']);
         $deleted = [new User(), new User()];
-        $this->uow->method('getDeleteDiff')->willReturn($deleted);
         $inserted = [new User()];
-        $this->uow->method('getInsertDiff')->willReturn($inserted);
+
+        $pc = $this->createScheduledCollection($user2, 'foo', $deleted, $inserted);
+
+        $this->manager->method('getUnitOfWork')->willReturn($this->uow);
+        $this->uow->method('getScheduledCollectionUpdates')->willReturn([$pc]);
 
         $this->dispatcher->expects($this->never())
             ->method('addCollectionChange');

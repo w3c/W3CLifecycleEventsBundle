@@ -2,6 +2,7 @@
 
 namespace W3C\LifecycleEventsBundle\Tests\Event;
 
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use W3C\LifecycleEventsBundle\Event\LifecycleUpdateEvent;
 use W3C\LifecycleEventsBundle\Tests\Attribute\Fixtures\User;
@@ -11,14 +12,11 @@ use W3C\LifecycleEventsBundle\Tests\Attribute\Fixtures\User;
  */
 class LifecycleUpdateEventTest extends TestCase
 {
-    private $deleted;
-    private $inserted;
-    private $propertyChanges;
-    private $collectionChanges;
-    /**
-     * @var LifecycleUpdateEvent
-     */
-    private $event;
+    private array $deleted;
+    private array $inserted;
+    private array $propertyChanges;
+    private array $collectionChanges;
+    private LifecycleUpdateEvent $event;
 
     public function setUp() : void
     {
@@ -48,9 +46,7 @@ class LifecycleUpdateEventTest extends TestCase
         $this->assertFalse($this->event->hasChangedField('tags'));
     }
 
-    /**
-     * @dataProvider provideTestInvalidCollection
-     */
+    #[DataProvider('provideTestInvalidCollection')]
     public function testInvalidCollection($field)
     {
         $this->expectException(\InvalidArgumentException::class);
@@ -58,14 +54,12 @@ class LifecycleUpdateEventTest extends TestCase
         $this->event->getDeletedElements($field);
     }
 
-    public function provideTestInvalidCollection()
+    public static function provideTestInvalidCollection()
     {
         return [['name'], ['tags']];
     }
 
-    /**
-     * @dataProvider provideTestInvalidProperty
-     */
+    #[DataProvider('provideTestInvalidProperty')]
     public function testInvalidProperty($field)
     {
         $this->expectException(\InvalidArgumentException::class);
@@ -73,7 +67,7 @@ class LifecycleUpdateEventTest extends TestCase
         $this->event->getOldValue($field);
     }
 
-    public function provideTestInvalidProperty()
+    public static function provideTestInvalidProperty()
     {
         return [['friends'], ['family']];
     }

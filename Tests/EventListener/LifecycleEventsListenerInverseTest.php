@@ -16,6 +16,7 @@ use Doctrine\ORM\Mapping\ManyToOneAssociationMapping;
 use Doctrine\ORM\Mapping\OneToManyAssociationMapping;
 use Doctrine\ORM\Mapping\OneToOneInverseSideMapping;
 use Doctrine\ORM\Mapping\OneToOneOwningSideMapping;
+use Doctrine\ORM\PersistentCollection;
 use Doctrine\ORM\UnitOfWork;
 use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -32,36 +33,16 @@ use W3C\LifecycleEventsBundle\Tests\Attribute\Fixtures\PersonNoMonitor;
  */
 class LifecycleEventsListenerInverseTest extends TestCase
 {
-    /**
-     * @var LifecycleEventsListener
-     */
-    private $listener;
-
-    /**
-     * @var LifecycleEventsDispatcher|MockObject
-     */
-    private $dispatcher;
-
-    /**
-     * @var EntityManagerInterface|MockObject
-     */
-    private $manager;
-
-    /**
-     * @var ClassMetadata|MockObject
-     */
-    private $classMetadata;
-
-    /**
-     * @var array
-     */
-    private $mappings;
-
-    private $person;
-    private $mentor;
-    private $father;
-    private $friend1;
-    private $friend2;
+    private LifecycleEventsListener $listener;
+    private LifecycleEventsDispatcher $dispatcher;
+    private EntityManagerInterface $manager;
+    private ClassMetadata $classMetadata;
+    private array $mappings;
+    private Person $person;
+    private Person $mentor;
+    private Person $father;
+    private Person $friend1;
+    private Person $friend2;
 
     public function setUp() : void
     {
@@ -168,7 +149,7 @@ class LifecycleEventsListenerInverseTest extends TestCase
             $this->classMetadata->reflFields[$field] = $this
                 ->getMockBuilder(\ReflectionProperty::class)
                 ->disableOriginalConstructor()
-                ->setMethods(['getValue'])
+                ->onlyMethods(['getValue'])
                 ->getMock();
         }
 
@@ -306,7 +287,7 @@ class LifecycleEventsListenerInverseTest extends TestCase
         $uow = $this
             ->getMockBuilder(UnitOfWork::class)
             ->disableOriginalConstructor()
-            ->setMethods(['getScheduledCollectionUpdates', 'getOwner', 'getMapping', 'getDeleteDiff', 'getInsertDiff'])
+            ->onlyMethods(['getScheduledCollectionUpdates'])
             ->getMock();
         $this->manager->method('getUnitOfWork')->willReturn($uow);
         $uow->method('getScheduledCollectionUpdates')->willReturn([]);
@@ -324,75 +305,56 @@ class LifecycleEventsListenerInverseTest extends TestCase
             ->method('getValue')
             ->willReturn($this->mentor);
 
-        $this->dispatcher->expects($this->exactly(4))
+        $matcher = $this->exactly(4);
+        $this->dispatcher->expects($matcher)
             ->method('addUpdate')
-            ->withConsecutive(
-                [
-                    $this->callback(function ($arg) { return $arg instanceof Update; }),
-                    $this->callback(function ($arg) { return $arg === $this->mentor; }),
-                    $this->callback(function ($arg) {
-                        return
-                            array_keys($arg) === ['mentoring'] &&
-                            $arg['mentoring']['old'] === null &&
-                            $arg['mentoring']['new'] === $this->person;
-                    }),
-                    $this->equalTo([])
-                ],
-                [
-                    $this->callback(function ($arg) { return $arg instanceof Update; }),
-                    $this->callback(function ($arg) { return $arg === $this->person; }),
-                    $this->callback(function ($arg) {
-                        return
-                            array_keys($arg) === ['mentor'] &&
-                            $arg['mentor']['old'] === null &&
-                            $arg['mentor']['new'] === $this->mentor;
-                    }),
-                    $this->equalTo([])
-                ],
-                [
-                    $this->callback(function ($arg) { return $arg instanceof Update; }),
-                    $this->callback(function ($arg) { return $arg === $this->mentor; }),
-                    $this->callback(function ($arg) {
-                        return
-                            array_keys($arg) === ['mentoring'] &&
-                            $arg['mentoring']['old'] === $this->person &&
-                            $arg['mentoring']['new'] === null;
-                    }),
-                    $this->equalTo([])
-                ],
-                [
-                    $this->callback(function ($arg) { return $arg instanceof Update; }),
-                    $this->callback(function ($arg) { return $arg === $this->person; }),
+            ->willReturnCallback(function ($update, $entity, $changes, $context) use ($matcher) {
+                $this->assertInstanceOf(Update::class, $update);
+                $this->assertSame([], $context);
 
-                    $this->callback(function ($arg) {
-                        return
-                            array_keys($arg) === ['mentor'] &&
-                            $arg['mentor']['old'] === $this->mentor &&
-                            $arg['mentor']['new'] === null;
-                    }),
-                    $this->equalTo([])
-                ]
-            );
+                if ($matcher->numberOfInvocations() === 1) {
+                    $this->assertSame($this->mentor, $entity);
+                    $this->assertSame(['mentoring'], array_keys($changes));
+                    $this->assertNull($changes['mentoring']['old']);
+                    $this->assertSame($this->person, $changes['mentoring']['new']);
+                } elseif ($matcher->numberOfInvocations() === 2) {
+                    $this->assertSame($this->person, $entity);
+                    $this->assertSame(['mentor'], array_keys($changes));
+                    $this->assertNull($changes['mentor']['old']);
+                    $this->assertSame($this->mentor, $changes['mentor']['new']);
+                } elseif ($matcher->numberOfInvocations() === 3) {
+                    $this->assertSame($this->mentor, $entity);
+                    $this->assertSame(['mentoring'], array_keys($changes));
+                    $this->assertSame($this->person, $changes['mentoring']['old']);
+                    $this->assertNull($changes['mentoring']['new']);
+                } elseif ($matcher->numberOfInvocations() === 4) {
+                    $this->assertSame($this->person, $entity);
+                    $this->assertSame(['mentor'], array_keys($changes));
+                    $this->assertSame($this->mentor, $changes['mentor']['old']);
+                    $this->assertNull($changes['mentor']['new']);
+                } else {
+                    $this->fail('addUpdate called more times than expected.');
+                }
+            });
 
-        $this->dispatcher->expects($this->exactly(2))
+        $matcher = $this->exactly(2);
+        $this->dispatcher->expects($matcher)
             ->method('addPropertyChange')
-            ->withConsecutive(
-                [
-                    $this->callback(function ($arg) { return $arg instanceof Change; }),
-                    $this->callback(function ($arg) { return $arg === $this->mentor; }),
-                    $this->equalTo('mentoring'),
-                    $this->equalTo(null),
-                    $this->callback(function ($arg) { return $arg === $this->person; })
-                ],
-                [
-                    $this->callback(function ($arg) { return $arg instanceof Change; }),
-                    $this->callback(function ($arg) { return $arg === $this->mentor; }),
-                    $this->equalTo('mentoring'),
-                    $this->callback(function ($arg) { return $arg === $this->person; }),
-                    $this->equalTo(null)
-                ]
-            )
-            ;
+            ->willReturnCallback(function ($change, $entity, $field, $old, $new) use ($matcher) {
+                $this->assertInstanceOf(Change::class, $change);
+                $this->assertSame($this->mentor, $entity);
+                $this->assertSame('mentoring', $field);
+
+                if ($matcher->numberOfInvocations() === 1) {
+                    $this->assertNull($old);
+                    $this->assertSame($this->person, $new);
+                } elseif ($matcher->numberOfInvocations() === 2) {
+                    $this->assertSame($this->person, $old);
+                    $this->assertNull($new);
+                } else {
+                    $this->fail('addPropertyChange called more times than expected.');
+                }
+            });
 
         $changeSet = ['mentor' => [null, $this->mentor]];
         $event     = new PreUpdateEventArgs($this->person, $this->manager, $changeSet);
@@ -495,8 +457,9 @@ class LifecycleEventsListenerInverseTest extends TestCase
         $uow = $this
             ->getMockBuilder(UnitOfWork::class)
             ->disableOriginalConstructor()
-            ->setMethods(['getScheduledCollectionUpdates', 'getOwner', 'getMapping', 'getDeleteDiff', 'getInsertDiff'])
+            ->onlyMethods(['getScheduledCollectionUpdates'])
             ->getMock();
+
         $this->manager->method('getUnitOfWork')->willReturn($uow);
         $uow->method('getScheduledCollectionUpdates')->willReturn([]);
 
@@ -509,73 +472,75 @@ class LifecycleEventsListenerInverseTest extends TestCase
             ->method('getName')
             ->willReturn($this->person::class);
 
-        $this->dispatcher->expects($this->exactly(4))
+        $matcher = $this->exactly(4);
+        $this->dispatcher->expects($matcher)
             ->method('addUpdate')
-            ->withConsecutive(
-                [
-                    $this->callback(function ($arg) { return $arg instanceof Update; }),
-                    $this->callback(function ($arg) { return $arg === $this->father; }),
-                    $this->equalTo([]),
-                    $this->callback(function ($arg) {
-                        return
-                            array_keys($arg) === ['sons'] &&
-                            $arg['sons']['deleted'] === [] &&
-                            $arg['sons']['inserted'] === [$this->person];
-                    })
-                ],
-                [
-                    $this->callback(function ($arg) { return $arg instanceof Update; }),
-                    $this->callback(function ($arg) { return $arg === $this->person; }),
-                    $this->callback(function ($arg) {
-                        return
-                            array_keys($arg) === ['father'] &&
-                            $arg['father']['old'] === null &&
-                            $arg['father']['new'] === $this->father;
-                    }),
-                    $this->equalTo([])
-                ],
-                [
-                    $this->callback(function ($arg) { return $arg instanceof Update; }),
-                    $this->callback(function ($arg) { return $arg === $this->father; }),
-                    $this->equalTo([]),
-                    $this->callback(function ($arg) {
-                        return
-                            array_keys($arg) === ['sons'] &&
-                            $arg['sons']['deleted'] === [$this->person] &&
-                            $arg['sons']['inserted'] === [];
-                    })
-                ],
-                [
-                    $this->callback(function ($arg) { return $arg instanceof Update; }),
-                    $this->callback(function ($arg) { return $arg === $this->person; }),
-                    $this->callback(function ($arg) {
-                        return
-                            array_keys($arg) === ['father'] &&
-                            $arg['father']['old'] === $this->father &&
-                            $arg['father']['new'] === null;
-                    }),
-                    $this->equalTo([])
-                ]
-            );
+            ->willReturnCallback(function ($update, $entity, $changes, $collections) use ($matcher) {
+                $this->assertInstanceOf(Update::class, $update);
 
-        $this->dispatcher->expects($this->exactly(2))
+                switch ($matcher->numberOfInvocations()) {
+                    case 1:
+                        $this->assertSame($this->father, $entity);
+                        $this->assertSame([], $changes);
+
+                        $this->assertSame(['sons'], array_keys($collections));
+                        $this->assertSame([], $collections['sons']['deleted']);
+                        $this->assertSame([$this->person], $collections['sons']['inserted']);
+                        break;
+
+                    case 2:
+                        $this->assertSame($this->person, $entity);
+                        $this->assertSame([], $collections);
+
+                        $this->assertSame(['father'], array_keys($changes));
+                        $this->assertNull($changes['father']['old']);
+                        $this->assertSame($this->father, $changes['father']['new']);
+                        break;
+
+                    case 3:
+                        $this->assertSame($this->father, $entity);
+                        $this->assertSame([], $changes);
+
+                        $this->assertSame(['sons'], array_keys($collections));
+                        $this->assertSame([$this->person], $collections['sons']['deleted']);
+                        $this->assertSame([], $collections['sons']['inserted']);
+                        break;
+
+                    case 4:
+                        $this->assertSame($this->person, $entity);
+                        $this->assertSame([], $collections);
+
+                        $this->assertSame(['father'], array_keys($changes));
+                        $this->assertSame($this->father, $changes['father']['old']);
+                        $this->assertNull($changes['father']['new']);
+                        break;
+
+                    default:
+                        $this->fail('addUpdate called more times than expected.');
+                }
+            });
+
+        $matcher = $this->exactly(2);
+        $this->dispatcher->expects($matcher)
             ->method('addCollectionChange')
-            ->withConsecutive(
-                [
-                    $this->callback(function ($arg) { return $arg instanceof Change; }),
-                    $this->callback(function ($arg) { return $arg === $this->father; }),
-                    $this->equalTo('sons'),
-                    $this->equalTo([]),
-                    $this->callback(function ($arg) { return $arg === [$this->person]; })
-                ],
-                [
-                    $this->callback(function ($arg) { return $arg instanceof Change; }),
-                    $this->callback(function ($arg) { return $arg === $this->father; }),
-                    $this->equalTo('sons'),
-                    $this->callback(function ($arg) { return $arg === [$this->person]; }),
-                    $this->equalTo([])
-                ]
-            );
+            ->willReturnCallback(function ($change, $entity, $field, $old, $new) use ($matcher) {
+                $this->assertInstanceOf(Change::class, $change);
+                $this->assertSame($this->father, $entity);
+                $this->assertSame('sons', $field);
+
+                switch ($matcher->numberOfInvocations()) {
+                    case 1:
+                        $this->assertSame([], $old);
+                        $this->assertSame([$this->person], $new);
+                        break;
+                    case 2:
+                        $this->assertSame([$this->person], $old);
+                        $this->assertSame([], $new);
+                        break;
+                    default:
+                        $this->fail('addCollectionChange called more times than expected.');
+                }
+            });
 
         $changeSet = ['father' => [null, $this->father]];
         $event     = new PreUpdateEventArgs($this->person, $this->manager, $changeSet);
@@ -605,50 +570,55 @@ class LifecycleEventsListenerInverseTest extends TestCase
             ->method('getValue')
             ->willReturn(new ArrayCollection([$this->friend1, $this->friend2]));
 
-        $this->dispatcher->expects($this->exactly(2))
-            ->method('addUpdate')
-            ->withConsecutive(
-                [
-                    $this->callback(function ($arg) { return $arg instanceof Update; }),
-                    $this->callback(function ($arg) { return $arg === $this->friend1; }),
-                    $this->equalTo([]),
-                    $this->callback(function ($arg) {
-                        return
-                            array_keys($arg) === ['friendOf'] &&
-                            $arg['friendOf']['deleted'] === [] &&
-                            $arg['friendOf']['inserted'] === [$this->person];
-                    })
-                ],
-                [
-                    $this->callback(function ($arg) { return $arg instanceof Update; }),
-                    $this->callback(function ($arg) { return $arg === $this->friend2; }),
-                    $this->equalTo([]),
-                    $this->callback(function ($arg) {
-                        return
-                            array_keys($arg) === ['friendOf'] &&
-                            $arg['friendOf']['deleted'] === [] &&
-                            $arg['friendOf']['inserted'] === [$this->person];
-                    })
-                ]);
+        $matcher = $this->exactly(2);
 
-        $this->dispatcher->expects($this->exactly(2))
+        $this->dispatcher->expects($matcher)
+            ->method('addUpdate')
+            ->willReturnCallback(function ($update, $entity, $changes, $collections) use ($matcher) {
+                $this->assertInstanceOf(Update::class, $update);
+                $this->assertSame([], $changes);
+
+                $this->assertSame(['friendOf'], array_keys($collections));
+                $this->assertSame([], $collections['friendOf']['deleted']);
+                $this->assertSame([$this->person], $collections['friendOf']['inserted']);
+
+                switch ($matcher->numberOfInvocations()) {
+                    case 1:
+                        $this->assertSame($this->friend1, $entity);
+                        break;
+
+                    case 2:
+                        $this->assertSame($this->friend2, $entity);
+                        break;
+
+                    default:
+                        $this->fail('addUpdate called more times than expected.');
+                }
+            });
+
+        $matcher = $this->exactly(2);
+
+        $this->dispatcher->expects($matcher)
             ->method('addCollectionChange')
-            ->withConsecutive(
-                [
-                    $this->callback(function ($arg) { return $arg instanceof Change; }),
-                    $this->callback(function ($arg) { return $arg === $this->friend1; }),
-                    $this->equalTo('friendOf'),
-                    $this->equalTo([]),
-                    $this->callback(function ($arg) { return $arg === [$this->person]; })
-                ],
-                [
-                    $this->callback(function ($arg) { return $arg instanceof Change; }),
-                    $this->callback(function ($arg) { return $arg === $this->friend2; }),
-                    $this->equalTo('friendOf'),
-                    $this->equalTo([]),
-                    $this->callback(function ($arg) { return $arg === [$this->person]; })
-                ]
-            );
+            ->willReturnCallback(function ($change, $entity, $field, $old, $new) use ($matcher) {
+                $this->assertInstanceOf(Change::class, $change);
+                $this->assertSame('friendOf', $field);
+                $this->assertSame([], $old);
+                $this->assertSame([$this->person], $new);
+
+                switch ($matcher->numberOfInvocations()) {
+                    case 1:
+                        $this->assertSame($this->friend1, $entity);
+                        break;
+
+                    case 2:
+                        $this->assertSame($this->friend2, $entity);
+                        break;
+
+                    default:
+                        $this->fail('addCollectionChange called more times than expected.');
+                }
+            });
 
         $this->listener->postPersist($event);
     }
@@ -670,69 +640,72 @@ class LifecycleEventsListenerInverseTest extends TestCase
             ->method('getValue')
             ->willReturn(new ArrayCollection([$this->friend1, $this->friend2]));
 
-        $this->dispatcher->expects($this->exactly(2))
+        $updateMatcher = $this->exactly(2);
+        $this->dispatcher->expects($updateMatcher)
             ->method('addUpdate')
-            ->withConsecutive(
-                [
-                    $this->callback(function ($arg) { return $arg instanceof Update; }),
-                    $this->callback(function ($arg) { return $arg === $this->friend1; }),
-                    $this->equalTo([]),
-                    $this->callback(function ($arg) {
-                        return
-                            array_keys($arg) === ['friendOf'] &&
-                            $arg['friendOf']['deleted'] === [$this->person] &&
-                            $arg['friendOf']['inserted'] === [];
-                    })
-                ],
-                [
-                    $this->callback(function ($arg) { return $arg instanceof Update; }),
-                    $this->callback(function ($arg) { return $arg === $this->friend2; }),
-                    $this->equalTo([]),
-                    $this->callback(function ($arg) {
-                        return
-                            array_keys($arg) === ['friendOf'] &&
-                            $arg['friendOf']['deleted'] === [$this->person] &&
-                            $arg['friendOf']['inserted'] === [];
-                    })
-                ]);
+            ->willReturnCallback(function ($update, $entity, $changes, $collections) use ($updateMatcher) {
+                $this->assertInstanceOf(Update::class, $update);
+                $this->assertSame([], $changes);
 
-        $this->dispatcher->expects($this->exactly(2))
+                $this->assertSame(['friendOf'], array_keys($collections));
+                $this->assertSame([$this->person], $collections['friendOf']['deleted']);
+                $this->assertSame([], $collections['friendOf']['inserted']);
+
+                switch ($updateMatcher->numberOfInvocations()) {
+                    case 1:
+                        $this->assertSame($this->friend1, $entity);
+                        break;
+
+                    case 2:
+                        $this->assertSame($this->friend2, $entity);
+                        break;
+
+                    default:
+                        $this->fail('addUpdate called more times than expected.');
+                }
+            });
+
+        $collectionMatcher = $this->exactly(2);
+        $this->dispatcher->expects($collectionMatcher)
             ->method('addCollectionChange')
-            ->withConsecutive(
-                [
-                    $this->callback(function ($arg) { return $arg instanceof Change; }),
-                    $this->callback(function ($arg) { return $arg === $this->friend1; }),
-                    $this->equalTo('friendOf'),
-                    $this->callback(function ($arg) { return $arg === [$this->person]; }),
-                    $this->equalTo([])
-                ],
-                [
-                    $this->callback(function ($arg) { return $arg instanceof Change; }),
-                    $this->callback(function ($arg) { return $arg === $this->friend2; }),
-                    $this->equalTo('friendOf'),
-                    $this->callback(function ($arg) { return $arg === [$this->person]; }),
-                    $this->equalTo([])
-                ]
-            );
+            ->willReturnCallback(function ($change, $entity, $field, $old, $new) use ($collectionMatcher) {
+                $this->assertInstanceOf(Change::class, $change);
+                $this->assertSame('friendOf', $field);
+                $this->assertSame([$this->person], $old);
+                $this->assertSame([], $new);
+
+                switch ($collectionMatcher->numberOfInvocations()) {
+                    case 1:
+                        $this->assertSame($this->friend1, $entity);
+                        break;
+
+                    case 2:
+                        $this->assertSame($this->friend2, $entity);
+                        break;
+
+                    default:
+                        $this->fail('addCollectionChange called more times than expected.');
+                }
+            });
 
         $this->listener->preRemove($event);
     }
 
     public function testManyToManyPreUpdate()
     {
+        $pc = new PersistentCollection($this->manager, $this->classMetadata, new ArrayCollection());
+        $pc->add($this->friend1);
+        $pc->add($this->friend2);
+        $pc->setOwner($this->person, $this->mappings['friends']);
+
         $uow = $this
             ->getMockBuilder(UnitOfWork::class)
             ->disableOriginalConstructor()
-            ->setMethods(['getScheduledCollectionUpdates', 'getOwner', 'getMapping', 'getDeleteDiff', 'getInsertDiff'])
+            ->onlyMethods(['getScheduledCollectionUpdates'])
             ->getMock();
+
         $this->manager->method('getUnitOfWork')->willReturn($uow);
-        $uow->method('getScheduledCollectionUpdates')->willReturn([$uow]);
-        $uow->method('getOwner')->willReturn($this->person);
-        $uow->method('getMapping')->willReturn(['fieldName' => 'friends']);
-        $deleted = [];
-        $uow->method('getDeleteDiff')->willReturn($deleted);
-        $inserted = [$this->friend1, $this->friend2];
-        $uow->method('getInsertDiff')->willReturn($inserted);
+        $uow->method('getScheduledCollectionUpdates')->willReturn([$pc]);
 
         $this->manager
             ->method('getClassMetadata')
@@ -742,63 +715,64 @@ class LifecycleEventsListenerInverseTest extends TestCase
         $this->classMetadata
             ->method('getName')
             ->willReturn($this->person::class);
+        $updateMatcher = $this->exactly(3);
 
-        $this->dispatcher->expects($this->exactly(3))
+        $this->dispatcher->expects($updateMatcher)
             ->method('addUpdate')
-            ->withConsecutive(
-                [
-                    $this->callback(function ($arg) { return $arg instanceof Update; }),
-                    $this->callback(function ($arg) { return $arg === $this->friend1; }),
-                    $this->equalTo([]),
-                    $this->callback(function ($arg) {
-                        return
-                            array_keys($arg) === ['friendOf'] &&
-                            $arg['friendOf']['deleted'] === [] &&
-                            $arg['friendOf']['inserted'] === [$this->person];
-                    })
-                ],
-                [
-                    $this->callback(function ($arg) { return $arg instanceof Update; }),
-                    $this->callback(function ($arg) { return $arg === $this->friend2; }),
-                    $this->equalTo([]),
-                    $this->callback(function ($arg) {
-                        return
-                            array_keys($arg) === ['friendOf'] &&
-                            $arg['friendOf']['deleted'] === [] &&
-                            $arg['friendOf']['inserted'] === [$this->person];
-                    })
-                ],
-                [
-                    $this->callback(function ($arg) { return $arg instanceof Update; }),
-                    $this->callback(function ($arg) { return $arg === $this->person; }),
-                    $this->equalTo([]),
-                    $this->callback(function ($arg) {
-                        return
-                            array_keys($arg) === ['friends'] &&
-                            $arg['friends']['deleted'] === [] &&
-                            $arg['friends']['inserted'] === [$this->friend1, $this->friend2];
-                    })
-                ]
-            );
+            ->willReturnCallback(function ($update, $entity, $changes, $collections) use ($updateMatcher) {
+                $this->assertInstanceOf(Update::class, $update);
+                $this->assertSame([], $changes);
 
-        $this->dispatcher->expects($this->exactly(2))
+                switch ($updateMatcher->numberOfInvocations()) {
+                    case 1:
+                        $this->assertSame($this->friend1, $entity);
+                        $this->assertSame(['friendOf'], array_keys($collections));
+                        $this->assertSame([], $collections['friendOf']['deleted']);
+                        $this->assertSame([$this->person], $collections['friendOf']['inserted']);
+                        break;
+
+                    case 2:
+                        $this->assertSame($this->friend2, $entity);
+                        $this->assertSame(['friendOf'], array_keys($collections));
+                        $this->assertSame([], $collections['friendOf']['deleted']);
+                        $this->assertSame([$this->person], $collections['friendOf']['inserted']);
+                        break;
+
+                    case 3:
+                        $this->assertSame($this->person, $entity);
+                        $this->assertSame(['friends'], array_keys($collections));
+                        $this->assertSame([], $collections['friends']['deleted']);
+                        $this->assertSame([$this->friend1, $this->friend2], $collections['friends']['inserted']);
+                        break;
+
+                    default:
+                        $this->fail('addUpdate called more times than expected.');
+                }
+            });
+
+        $collectionMatcher = $this->exactly(2);
+
+        $this->dispatcher->expects($collectionMatcher)
             ->method('addCollectionChange')
-            ->withConsecutive(
-                [
-                    $this->callback(function ($arg) { return $arg instanceof Change; }),
-                    $this->callback(function ($arg) { return $arg === $this->friend1; }),
-                    $this->equalTo('friendOf'),
-                    $this->equalTo([]),
-                    $this->callback(function ($arg) { return $arg === [$this->person]; })
-                ],
-                [
-                    $this->callback(function ($arg) { return $arg instanceof Change; }),
-                    $this->callback(function ($arg) { return $arg === $this->friend2; }),
-                    $this->equalTo('friendOf'),
-                    $this->equalTo([]),
-                    $this->callback(function ($arg) { return $arg === [$this->person]; })
-                ]
-            );
+            ->willReturnCallback(function ($change, $entity, $field, $old, $new) use ($collectionMatcher) {
+                $this->assertInstanceOf(Change::class, $change);
+                $this->assertSame('friendOf', $field);
+                $this->assertSame([], $old);
+                $this->assertSame([$this->person], $new);
+
+                switch ($collectionMatcher->numberOfInvocations()) {
+                    case 1:
+                        $this->assertSame($this->friend1, $entity);
+                        break;
+
+                    case 2:
+                        $this->assertSame($this->friend2, $entity);
+                        break;
+
+                    default:
+                        $this->fail('addCollectionChange called more times than expected.');
+                }
+            });
 
         $changeSet = [];
         $event     = new PreUpdateEventArgs($this->person, $this->manager, $changeSet);
@@ -808,19 +782,24 @@ class LifecycleEventsListenerInverseTest extends TestCase
 
     public function testManyToManyRemovePreUpdate()
     {
+        $pc = new PersistentCollection(
+            $this->manager,
+            $this->classMetadata,
+            new ArrayCollection([$this->friend1])
+        );
+        $pc->setOwner($this->person, $this->mappings['friends']);
+        $pc->takeSnapshot();
+        $pc->removeElement($this->friend1);
+        $pc->add($this->friend2);
+
         $uow = $this
             ->getMockBuilder(UnitOfWork::class)
             ->disableOriginalConstructor()
-            ->setMethods(['getScheduledCollectionUpdates', 'getOwner', 'getMapping', 'getDeleteDiff', 'getInsertDiff'])
+            ->onlyMethods(['getScheduledCollectionUpdates'])
             ->getMock();
+
         $this->manager->method('getUnitOfWork')->willReturn($uow);
-        $uow->method('getScheduledCollectionUpdates')->willReturn([$uow]);
-        $uow->method('getOwner')->willReturn($this->person);
-        $uow->method('getMapping')->willReturn(['fieldName' => 'friends']);
-        $deleted = [$this->friend1];
-        $uow->method('getDeleteDiff')->willReturn($deleted);
-        $inserted = [$this->friend2];
-        $uow->method('getInsertDiff')->willReturn($inserted);
+        $uow->method('getScheduledCollectionUpdates')->willReturn([$pc]);
 
         $this->manager
             ->method('getClassMetadata')
@@ -835,62 +814,64 @@ class LifecycleEventsListenerInverseTest extends TestCase
             ->method('getName')
             ->willReturn($this->person::class);
 
-        $this->dispatcher->expects($this->exactly(3))
+        $updateMatcher = $this->exactly(3);
+        $this->dispatcher->expects($updateMatcher)
             ->method('addUpdate')
-            ->withConsecutive(
-                [
-                    $this->callback(function ($arg) { return $arg instanceof Update; }),
-                    $this->callback(function ($arg) { return $arg === $this->friend1; }),
-                    $this->equalTo([]),
-                    $this->callback(function ($arg) {
-                        return
-                            array_keys($arg) === ['friendOf'] &&
-                            $arg['friendOf']['deleted'] === [$this->person] &&
-                            $arg['friendOf']['inserted'] === [];
-                    })
-                ],
-                [
-                    $this->callback(function ($arg) { return $arg instanceof Update; }),
-                    $this->callback(function ($arg) { return $arg === $this->friend2; }),
-                    $this->equalTo([]),
-                    $this->callback(function ($arg) {
-                        return
-                            array_keys($arg) === ['friendOf'] &&
-                            $arg['friendOf']['deleted'] === [] &&
-                            $arg['friendOf']['inserted'] === [$this->person];
-                    })
-                ],
-                [
-                    $this->callback(function ($arg) { return $arg instanceof Update; }),
-                    $this->callback(function ($arg) { return $arg === $this->person; }),
-                    $this->equalTo([]),
-                    $this->callback(function ($arg) {
-                        return
-                            array_keys($arg) === ['friends'] &&
-                            $arg['friends']['deleted'] === [$this->friend1] &&
-                            $arg['friends']['inserted'] === [$this->friend2];
-                    })
-                ]
-            );
+            ->willReturnCallback(function ($update, $entity, $changes, $collections) use ($updateMatcher) {
+                $this->assertInstanceOf(Update::class, $update);
+                $this->assertSame([], $changes);
 
-        $this->dispatcher->expects($this->exactly(2))
+                switch ($updateMatcher->numberOfInvocations()) {
+                    case 1:
+                        $this->assertSame($this->friend1, $entity);
+                        $this->assertSame(['friendOf'], array_keys($collections));
+                        $this->assertSame([$this->person], $collections['friendOf']['deleted']);
+                        $this->assertSame([], $collections['friendOf']['inserted']);
+                        break;
+
+                    case 2:
+                        $this->assertSame($this->friend2, $entity);
+                        $this->assertSame(['friendOf'], array_keys($collections));
+                        $this->assertSame([], $collections['friendOf']['deleted']);
+                        $this->assertSame([$this->person], $collections['friendOf']['inserted']);
+                        break;
+
+                    case 3:
+                        $this->assertSame($this->person, $entity);
+                        $this->assertSame(['friends'], array_keys($collections));
+                        $this->assertSame([$this->friend1], $collections['friends']['deleted']);
+                        $this->assertSame([$this->friend2], $collections['friends']['inserted']);
+                        break;
+
+                    default:
+                        $this->fail('addUpdate called more times than expected.');
+                }
+            });
+
+        $collectionMatcher = $this->exactly(2);
+        $this->dispatcher->expects($collectionMatcher)
             ->method('addCollectionChange')
-            ->withConsecutive(
-                [
-                    $this->callback(function ($arg) { return $arg instanceof Change; }),
-                    $this->callback(function ($arg) { return $arg === $this->friend1; }),
-                    $this->equalTo('friendOf'),
-                    $this->callback(function ($arg) { return $arg === [$this->person]; }),
-                    $this->equalTo([])
-                ],
-                [
-                    $this->callback(function ($arg) { return $arg instanceof Change; }),
-                    $this->callback(function ($arg) { return $arg === $this->friend2; }),
-                    $this->equalTo('friendOf'),
-                    $this->equalTo([]),
-                    $this->callback(function ($arg) { return $arg === [$this->person]; })
-                ]
-            );
+            ->willReturnCallback(function ($change, $entity, $field, $old, $new) use ($collectionMatcher) {
+                $this->assertInstanceOf(Change::class, $change);
+                $this->assertSame('friendOf', $field);
+
+                switch ($collectionMatcher->numberOfInvocations()) {
+                    case 1:
+                        $this->assertSame($this->friend1, $entity);
+                        $this->assertSame([$this->person], $old);
+                        $this->assertSame([], $new);
+                        break;
+
+                    case 2:
+                        $this->assertSame($this->friend2, $entity);
+                        $this->assertSame([], $old);
+                        $this->assertSame([$this->person], $new);
+                        break;
+
+                    default:
+                        $this->fail('addCollectionChange called more times than expected.');
+                }
+            });
 
         $changeSet = [];
         $event     = new PreUpdateEventArgs($this->person, $this->manager, $changeSet);
