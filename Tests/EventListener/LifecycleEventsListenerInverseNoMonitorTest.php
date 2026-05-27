@@ -16,10 +16,11 @@ use Doctrine\ORM\Mapping\ManyToOneAssociationMapping;
 use Doctrine\ORM\Mapping\OneToManyAssociationMapping;
 use Doctrine\ORM\Mapping\OneToOneInverseSideMapping;
 use Doctrine\ORM\Mapping\OneToOneOwningSideMapping;
+use Doctrine\ORM\Mapping\PropertyAccessors\PropertyAccessorFactory;
+use Doctrine\ORM\Mapping\PropertyAccessors\RawValuePropertyAccessor;
 use Doctrine\ORM\PersistentCollection;
 use Doctrine\ORM\UnitOfWork;
 use PHPUnit\Framework\TestCase;
-use PHPUnit\Framework\MockObject\MockObject;
 use W3C\LifecycleEventsBundle\Attribute\Update;
 use W3C\LifecycleEventsBundle\EventListener\LifecycleEventsListener;
 use W3C\LifecycleEventsBundle\Services\AttributeGetter;
@@ -138,15 +139,14 @@ class LifecycleEventsListenerInverseNoMonitorTest extends TestCase
         });
 
         $this->classMetadata
-            ->method('getReflectionProperty')
+            ->method('getPropertyAccessor')
             ->willReturnCallback(function () {
                 $field = func_get_arg(0);
-                return new \ReflectionProperty(PersonNoMonitor::class, $field);
+                return PropertyAccessorFactory::createPropertyAccessor(PersonNoMonitor::class, $field);
         });
 
         foreach (array_keys($this->mappings) as $field) {
-            $this->classMetadata->reflFields[$field] = $this
-                ->getMockBuilder(\ReflectionProperty::class)
+            $this->classMetadata->propertyAccessors[$field] = $this->getMockBuilder(RawValuePropertyAccessor::class)
                 ->disableOriginalConstructor()
                 ->onlyMethods(['getValue'])
                 ->getMock();
@@ -204,7 +204,7 @@ class LifecycleEventsListenerInverseNoMonitorTest extends TestCase
             ->with($this->person::class)
             ->willReturn($this->classMetadata);
 
-        $this->classMetadata->reflFields['mentor']
+        $this->classMetadata->propertyAccessors['mentor']
             ->method('getValue')
             ->willReturn($this->mentor);
 
@@ -227,7 +227,7 @@ class LifecycleEventsListenerInverseNoMonitorTest extends TestCase
             ->with($this->person::class)
             ->willReturn($this->classMetadata);
 
-        $this->classMetadata->reflFields['mentor']
+        $this->classMetadata->propertyAccessors['mentor']
             ->method('getValue')
             ->willReturn($this->mentor);
 
@@ -256,7 +256,7 @@ class LifecycleEventsListenerInverseNoMonitorTest extends TestCase
             ->with($this->person::class)
             ->willReturn($this->classMetadata);
 
-        $this->classMetadata->reflFields['mentor']
+        $this->classMetadata->propertyAccessors['mentor']
             ->method('getValue')
             ->willReturn($this->mentor);
 
@@ -306,7 +306,7 @@ class LifecycleEventsListenerInverseNoMonitorTest extends TestCase
             ->with($this->person::class)
             ->willReturn($this->classMetadata);
 
-        $this->classMetadata->reflFields['father']
+        $this->classMetadata->propertyAccessors['father']
             ->method('getValue')
             ->willReturn($this->father);
 
@@ -329,7 +329,7 @@ class LifecycleEventsListenerInverseNoMonitorTest extends TestCase
             ->with($this->person::class)
             ->willReturn($this->classMetadata);
 
-        $this->classMetadata->reflFields['father']
+        $this->classMetadata->propertyAccessors['father']
             ->method('getValue')
             ->willReturn($this->mentor);
 
@@ -404,7 +404,7 @@ class LifecycleEventsListenerInverseNoMonitorTest extends TestCase
             ->with($this->person::class)
             ->willReturn($this->classMetadata);
 
-        $this->classMetadata->reflFields['friends']
+        $this->classMetadata->propertyAccessors['friends']
             ->method('getValue')
             ->willReturn(new ArrayCollection([$this->friend1, $this->friend2]));
 
@@ -427,7 +427,7 @@ class LifecycleEventsListenerInverseNoMonitorTest extends TestCase
             ->with($this->person::class)
             ->willReturn($this->classMetadata);
 
-        $this->classMetadata->reflFields['friends']
+        $this->classMetadata->propertyAccessors['friends']
             ->method('getValue')
             ->willReturn(new ArrayCollection([$this->friend1, $this->friend2]));
 

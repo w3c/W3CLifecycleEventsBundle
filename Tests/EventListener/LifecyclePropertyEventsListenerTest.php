@@ -7,6 +7,7 @@ use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\Event\PreUpdateEventArgs;
 use Doctrine\ORM\Mapping\ClassMetadata;
 use Doctrine\ORM\Mapping\OneToManyAssociationMapping;
+use Doctrine\ORM\Mapping\PropertyAccessors\PropertyAccessorFactory;
 use Doctrine\ORM\PersistentCollection;
 use Doctrine\ORM\UnitOfWork;
 use PHPUnit\Framework\TestCase;
@@ -106,9 +107,9 @@ class LifecyclePropertyEventsListenerTest extends TestCase
             ->willReturn($user::class);
 
         $this->classMetadata
-            ->method('getReflectionProperty')
+            ->method('getPropertyAccessor')
             ->with('name')
-            ->willReturn(new \ReflectionProperty($user, 'name'));
+            ->willReturn(PropertyAccessorFactory::createPropertyAccessor($user::class, 'name'));
 
         $this->dispatcher->expects($this->once())
             ->method('addPropertyChange')
@@ -123,7 +124,7 @@ class LifecyclePropertyEventsListenerTest extends TestCase
         $changeSet = [];
         $event     = new PreUpdateEventArgs($user, $this->manager, $changeSet);
 
-        $reflection = new \ReflectionProperty(get_class($user), 'name');
+        $reflection = PropertyAccessorFactory::createPropertyAccessor($user::class, 'name')->getUnderlyingReflector();
         $attribute = $reflection->getAttributes(Change::class)[0]->newInstance();
 
         $deleted = [new User(), new User()];
@@ -144,9 +145,9 @@ class LifecyclePropertyEventsListenerTest extends TestCase
             ->willReturn($user::class);
 
         $this->classMetadata
-            ->method('getReflectionProperty')
+            ->method('getPropertyAccessor')
             ->with('friends')
-            ->willReturn(new \ReflectionProperty($user, 'friends'));
+            ->willReturn(PropertyAccessorFactory::createPropertyAccessor($user::class, 'friends'));
 
         $this->dispatcher->expects($this->once())
             ->method('addCollectionChange')
@@ -215,9 +216,9 @@ class LifecyclePropertyEventsListenerTest extends TestCase
             ->willReturn($user::class);
 
         $this->classMetadata
-            ->method('getReflectionProperty')
+            ->method('getPropertyAccessor')
             ->with('friends')
-            ->willReturn(new \ReflectionProperty($user, 'friends'));
+            ->willReturn(PropertyAccessorFactory::createPropertyAccessor($user::class, 'friends'));
 
         $this->dispatcher->expects($this->never())
             ->method('addCollectionChange');

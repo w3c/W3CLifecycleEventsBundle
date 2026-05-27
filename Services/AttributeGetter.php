@@ -46,7 +46,7 @@ class AttributeGetter
     public function getPropertyAttribute(ClassMetadata $classMetadata, string $field, string $attributeClass): ?object
     {
 
-        $reflProperty = $classMetadata->getReflectionProperty($field);
+        $reflProperty = $classMetadata->getPropertyAccessor($field)?->getUnderlyingReflector();
 
         if ($reflProperty) {
             $attributes = $reflProperty->getAttributes($attributeClass);
